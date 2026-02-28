@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Subject {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  questions   Question[]
+  quizzes     QuizSubject[]
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Question {
+  id            String   @id @default(cuid())
+  subjectId     String
+  subject       Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  text          String
+  type          QuestionType
+  options       Json?     // MCQ options
+  correctAnswer String
+  explanation   String?
+
+  difficulty    Difficulty @default(MEDIUM)
+  isActive      Boolean    @default(true)
+
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  quizQuestions QuizQuestion[]
+  answers       Answer[]
+
+  @@index([subjectId])
+  @@index([isActive])
+}
+
+enum QuestionType {
+  SINGLE
+  MULTIPLE
+  TEXT
+}
+
+model Quiz {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+
+  durationMinutes Int      @default(60)
+  isActive        Boolean  @default(false)
+  showLeaderboard Boolean  @default(true)
+  examMode        Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  subjects        QuizSubject[]
+  questions       QuizQuestion[]
+  batches         Batch[]
+}
+
+model QuizSubject {
+  quizId    String
+  subjectId String
+
+  quiz      Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@id([quizId, subjectId])
+}
+
+model QuizQuestion {
+  id         String @id @default(cuid())
+  quizId     String
+  questionId String
+
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  marks      Int      @default(1)
+  order      Int
+
+  @@unique([quizId, questionId])
+  @@index([quizId])
+  @@index([questionId])
+}
+
+model Batch {
+  id                   String     @id @default(cuid())
+  quizId               String
+  title                String
+  slug                 String     @unique
+  startTime            DateTime?
+  endTime              DateTime?
+  isActive             Boolean    @default(false)
+  ipLockEnabled        Boolean    @default(false)
+  deviceLockEnabled    Boolean    @default(false)
+  leaderboardVisible   Boolean    @default(true)
+  strictIpMode         Boolean    @default(false)
+  strictDeviceMode     Boolean    @default(false)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  
+  quiz                 Quiz       @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  responses            Response[]
+
+  @@index([quizId])
+  @@index([slug])
+  @@index([isActive])
+}
+
+model Response {
+  id              String      @id @default(cuid())
+  batchId         String
+  email           String
+  name            String?
+  ipAddress       String?
+  deviceHash      String?
+  startedAt       DateTime    @default(now())
+  submittedAt     DateTime?
+  totalScore      Float       @default(0)
+  isComplete      Boolean     @default(false)
+  isFlagged       Boolean     @default(false)
+  flagReason      String?
+  
+  batch           Batch       @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  answers         Answer[]
+
+  @@unique([batchId, email])
+  @@index([batchId])
+  @@index([totalScore])
+  @@index([email])
+}
+
+model Answer {
+  id          String    @id @default(cuid())
+  responseId  String
+  questionId  String
+  textAnswer  String?
+  isCorrect   Boolean   @default(false)
+  score       Float     @default(0)
+  gradedAt    DateTime?
+  gradedBy    String?
+  
+  response    Response  @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  question    Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([responseId])
+  @@index([questionId])
+}
+
+model LeaderboardSnapshot {
+  id        String   @id @default(cuid())
+  batchId   String
+  data      Json
+  createdAt DateTime @default(now())
+
+  @@index([batchId])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  batchId    String?
+  responseId String?
+  action     String
+  details    Json
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([batchId])
+  @@index([responseId])
+  @@index([createdAt])
+}
