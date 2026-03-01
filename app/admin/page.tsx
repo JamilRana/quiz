@@ -35,6 +35,7 @@ export default function AdminLoginPage() {
         })
       } else {
         router.push('/admin/dashboard')
+        router.refresh()
       }
     } catch {
       toast({
