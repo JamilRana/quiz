@@ -1,112 +1,88 @@
-import { PrismaClient, Difficulty, QuestionType } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { PrismaClient, QuestionType, Difficulty } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Seeding database with New Architecture...");
+  console.log('🚀 Starting Expanded eVLMIS Seeding...');
 
-  // 1. Create Admin
-  const hashedPassword = await bcrypt.hash("Dghs@123", 10);
-  const admin = await prisma.admin.upsert({
-    where: { email: "ame@mis.dghs.gov.bd" },
-    update: { password: hashedPassword },
+  const subject = await prisma.subject.upsert({
+    where: { name: 'eVLMIS Technical' },
+    update: {},
     create: {
-      email: "ame@mis.dghs.gov.bd",
-      password: hashedPassword,
-      name: "Admin User",
+      name: 'eVLMIS Technical',
+      description: 'Advanced Vaccine Intelligence and Logistics Training',
     },
   });
-  console.log("Admin seeded:", admin.email);
 
-  // 2. Create Subjects
-  const biology = await prisma.subject.upsert({
-    where: { name: "General Biology" },
+  const quiz = await prisma.quiz.upsert({
+    where: { id: 'cl_evlmis_pro_001' },
     update: {},
-    create: { name: "General Biology", description: "Basic biological concepts and anatomy" }
-  });
-
-  const chemistry = await prisma.subject.upsert({
-    where: { name: "Clinical Chemistry" },
-    update: {},
-    create: { name: "Clinical Chemistry", description: "Analytical chemistry in medical diagnostics" }
-  });
-  console.log("Subjects seeded.");
-
-  // 3. Create Questions (Question Bank)
-  const q1 = await prisma.question.create({
-    data: {
-      subjectId: biology.id,
-      text: "What is the powerhouse of the cell?",
-      type: QuestionType.SINGLE,
-      options: ["Nucleus", "Ribosome", "Mitochondria", "Golgi Apparatus"],
-      correctAnswer: "Mitochondria",
-      difficulty: Difficulty.EASY,
-    }
-  });
-
-  const q2 = await prisma.question.create({
-    data: {
-      subjectId: biology.id,
-      text: "Which of these are human organs?",
-      type: QuestionType.MULTIPLE,
-      options: ["Heart", "Leaf", "Lungs", "Branch"],
-      correctAnswer: "Heart, Lungs", // Simple string matching logic used in API currently
-      difficulty: Difficulty.EASY,
-    }
-  });
-
-  const q3 = await prisma.question.create({
-    data: {
-      subjectId: chemistry.id,
-      text: "What is the pH of pure water?",
-      type: QuestionType.SINGLE,
-      options: ["5", "7", "9", "12"],
-      correctAnswer: "7",
-      difficulty: Difficulty.MEDIUM,
-    }
-  });
-  console.log("Question Bank seeded.");
-
-  // 4. Create Quiz
-  const quiz = await prisma.quiz.create({
-    data: {
-      title: "Diagnostic Entrance Exam 2026",
-      description: "Standard entrance assessment for medical technicians",
+    create: {
+      id: 'cl_evlmis_pro_001',
+      title: 'eVLMIS Advanced Certification',
+      description: 'Comprehensive test on Cold Chain and Inventory Management',
       durationMinutes: 30,
       isActive: true,
       examMode: true,
-      subjects: {
-        create: {
-          subjectId: biology.id,
-        }
-      }
+      subjects: { create: { subjectId: subject.id } },
+    },
+  });
+
+  const newQuestions = [
+    {
+      text: 'eVLMIS-এ তাপমাত্রার অ্যালার্ট (Temperature Alert) কখন তৈরি হয়?',
+      options: ['বাতাসের আর্দ্রতা বাড়লে', 'তাপমাত্রা নির্ধারিত সীমার (+২°C থেকে +৮°C) বাইরে গেলে', 'ফ্রিজের দরজা খোলা থাকলে'],
+      correctAnswer: 'তাপমাত্রা নির্ধারিত সীমার (+২°C থেকে +৮°C) বাইরে গেলে',
+    },
+    {
+      text: 'স্টকে থাকা ভ্যাকসিনের ক্ষেত্রে "EEFO" নীতি বলতে কী বোঝায়?',
+      options: ['Early Expiry First Out', 'Early Entry First Out', 'Easy Entry Fast Output'],
+      correctAnswer: 'Early Expiry First Out',
+    },
+    {
+      text: 'Remote Temperature Monitoring System (RTMS) এর প্রধান কাজ কী?',
+      options: ['ভ্যাকসিনের গুণগত মান পরীক্ষা', 'রিয়েল-টাইম তাপমাত্রা পর্যবেক্ষণ ও অ্যালার্ট', 'ভ্যাকসিনের মেয়াদ বৃদ্ধি'],
+      correctAnswer: 'রিয়েল-টাইম তাপমাত্রা পর্যবেক্ষণ ও অ্যালার্ট',
+    },
+    {
+      text: 'eVLMIS মোবাইল অ্যাপ্লিকেশনের একটি বিশেষ সুবিধা কী?',
+      options: ['অফলাইন ডাটা এন্ট্রি এবং সিঙ্ক্রোনাইজেশন', 'শুধুমাত্র ল্যাপটপে ব্যবহার', 'ইন্টারনেট ছাড়া ডাটা সেভ হয় না'],
+      correctAnswer: 'অফলাইন ডাটা এন্ট্রি এবং সিঙ্ক্রোনাইজেশন',
+    },
+    {
+      text: 'eVLMIS সিস্টেমে "UCC" (Upazila Cold Chain) স্টোর থেকে ভ্যাকসিন কোথায় সরবরাহ করা হয়?',
+      options: ['সরাসরি সদর দপ্তরে', 'আউটরিচ সেশন সেন্টার বা সাব-সেন্টারে', 'বেসরকারি ফার্মেসিতে'],
+      correctAnswer: 'আউটরিচ সেশন সেন্টার বা সাব-সেন্টারে',
+    },
+    {
+      text: '"Stock Out" অবস্থা প্রতিরোধের জন্য eVLMIS কোন ফিচারটি ব্যবহার করে?',
+      options: ['অটোমেটিক রিমাইন্ডার ও ড্যাশবোর্ড এনালাইসিস', 'ম্যানুয়াল রেজিস্টার খাতা', 'বার্ষিক রিপোর্ট'],
+      correctAnswer: 'অটোমেটিক রিমাইন্ডার ও ড্যাশবোর্ড এনালাইসিস',
     }
-  });
+  ];
 
-  // 5. Link Questions to Quiz
-  await prisma.quizQuestion.createMany({
-    data: [
-      { quizId: quiz.id, questionId: q1.id, marks: 1, order: 1 },
-      { quizId: quiz.id, questionId: q2.id, marks: 2, order: 2 },
-    ]
-  });
-  console.log("Quiz structure seeded.");
+  for (let i = 0; i < newQuestions.length; i++) {
+    const q = newQuestions[i];
+    await prisma.question.create({
+      data: {
+        subjectId: subject.id,
+        text: q.text,
+        type: QuestionType.SINGLE,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        difficulty: Difficulty.MEDIUM,
+        quizQuestions: {
+          create: {
+            quizId: quiz.id,
+            order: i + 1,
+            marks: 1,
+          },
+        },
+      },
+    });
+  }
 
-  // 6. Create Batch
-  const batch = await prisma.batch.create({
-    data: {
-      quizId: quiz.id,
-      title: "Batch A - Morning Session",
-      slug: "admission-batch-a-2026",
-      isActive: true,
-      startTime: new Date(),
-      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week from now
-    }
-  });
-  console.log("Live Batch created:", batch.slug);
-
-  console.log("Seeding completed successfully!");
+  console.log('✅ Seeded 6 advanced eVLMIS questions successfully.');
 }
 
 main()

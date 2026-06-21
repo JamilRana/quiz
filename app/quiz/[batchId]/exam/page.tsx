@@ -219,6 +219,16 @@ export default function ExamPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 font-sans">
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
+
       {tabWarning && (
         <div className="fixed inset-0 bg-red-600/95 z-50 flex items-center justify-center p-4">
           <Card className="max-w-md bg-white border-none shadow-2xl">
@@ -238,19 +248,21 @@ export default function ExamPage() {
       )}
 
       <div className="sticky top-0 bg-slate-800 border-b border-slate-700 z-10 shadow-lg">
-        <div className="max-w-5xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <h1 className="font-bold text-white text-xl">{batch.quizTitle} - {batch.title}</h1>
-              <div className="flex items-center gap-3 text-sm text-slate-400">
-                <span className="bg-slate-700 px-2 py-0.5 rounded text-blue-400 font-bold">Q{currentIndex + 1} / {questions.length}</span>
-                <span className="bg-slate-700 px-2 py-0.5 rounded text-emerald-400 font-bold">{Object.keys(answers).length} Answered</span>
+        <div className="max-w-5xl mx-auto px-4 py-3 md:py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="space-y-0.5 md:space-y-1 min-w-0 flex-1">
+              <h1 className="font-bold text-white text-base md:text-xl truncate max-w-[150px] sm:max-w-[250px] md:max-w-none">
+                {batch.quizTitle} - {batch.title}
+              </h1>
+              <div className="flex items-center gap-2 md:gap-3 text-xs md:text-sm text-slate-400">
+                <span className="bg-slate-700 px-1.5 py-0.5 rounded text-blue-400 font-bold shrink-0">Q{currentIndex + 1} / {questions.length}</span>
+                <span className="bg-slate-700 px-1.5 py-0.5 rounded text-emerald-400 font-bold shrink-0">{Object.keys(answers).length} Answered</span>
               </div>
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 md:gap-6 shrink-0">
               {showTimer && (
-                <div className={`text-3xl font-mono font-black ${isLowTime ? 'text-red-500 animate-pulse' : 'text-blue-400'} flex items-center gap-2`}>
-                  <Clock className="w-6 h-6" />
+                <div className={`text-lg sm:text-2xl md:text-3xl font-mono font-black ${isLowTime ? 'text-red-500 animate-pulse' : 'text-blue-400'} flex items-center gap-1 md:gap-2`}>
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
                   {formatTime(timeLeft)}
                 </div>
               )}
@@ -258,54 +270,54 @@ export default function ExamPage() {
                 variant="ghost" 
                 size="icon"
                 onClick={() => setShowTimer(!showTimer)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-white w-8 h-8 md:w-10 md:h-10 shrink-0"
               >
-                {showTimer ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showTimer ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
               </Button>
               <Button 
                 onClick={handleSubmit} 
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 h-12 rounded-xl transition-all hover:scale-105 active:scale-95"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 md:px-8 h-10 md:h-12 text-xs md:text-base rounded-xl transition-all hover:scale-105 active:scale-95 shrink-0"
               >
                 Submit Exam
               </Button>
             </div>
           </div>
-          <Progress value={progress} className="mt-4 h-2 bg-slate-700 overflow-hidden rounded-full" />
+          <Progress value={progress} className="mt-3 md:mt-4 h-1.5 md:h-2 bg-slate-700 overflow-hidden rounded-full" />
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-8">
-        <Card className="bg-slate-800 border-none shadow-2xl rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-500">
-          <CardHeader className="pb-8 pt-10 px-10 border-b border-slate-700/50">
-            <div className="flex justify-between items-start gap-4">
-              <CardTitle className="text-3xl text-white leading-tight font-extrabold">
+      <div className="max-w-4xl mx-auto p-4 md:p-8">
+        <Card className="bg-slate-800 border-none shadow-2xl rounded-2xl md:rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-500">
+          <CardHeader className="p-5 md:pb-8 md:pt-10 md:px-10 border-b border-slate-700/50">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+              <CardTitle className="text-xl md:text-3xl text-white leading-tight font-extrabold">
                 {currentQuestion.text}
               </CardTitle>
-              <div className="shrink-0 bg-blue-600/10 text-blue-400 border border-blue-600/20 px-4 py-1.5 rounded-full text-sm font-black uppercase tracking-widest">
+              <div className="shrink-0 bg-blue-600/10 text-blue-400 border border-blue-600/20 px-3 py-1 md:px-4 md:py-1.5 rounded-full text-xs md:text-sm font-black uppercase tracking-widest">
                 {currentQuestion.marks} PTS
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-10">
+          <CardContent className="p-5 md:p-10">
             {currentQuestion.type === 'SINGLE' && (
               <RadioGroup
                 value={answers[currentQuestion.id]?.selectedOption || ''}
                 onValueChange={(v) => handleAnswer(currentQuestion.id, v)}
-                className="grid grid-cols-1 gap-4"
+                className="grid grid-cols-1 gap-3 md:gap-4"
               >
                 {currentQuestion.options?.map((option, i) => (
                   <Label 
                     key={i} 
                     htmlFor={`opt-${i}`}
-                    className={`flex items-center gap-4 p-6 rounded-2xl border-2 transition-all cursor-pointer group ${
+                    className={`flex items-center gap-3 md:gap-4 p-4 md:p-6 rounded-xl md:rounded-2xl border-2 transition-all cursor-pointer group ${
                       answers[currentQuestion.id]?.selectedOption === option 
                         ? 'border-blue-500 bg-blue-500/10' 
                         : 'border-slate-700 bg-slate-700/30 hover:border-slate-600 hover:bg-slate-700/50'
                     }`}
                   >
-                    <RadioGroupItem value={option} id={`opt-${i}`} className="h-6 w-6 border-slate-500 text-blue-500" />
-                    <div className="flex-1 text-xl text-slate-200">
-                      <span className="font-black mr-4 text-blue-400/50">{String.fromCharCode(65 + i)}.</span>
+                    <RadioGroupItem value={option} id={`opt-${i}`} className="h-5 w-5 md:h-6 md:w-6 border-slate-500 text-blue-500 shrink-0" />
+                    <div className="flex-1 text-base md:text-xl text-slate-200 leading-snug">
+                      <span className="font-black mr-2 md:mr-4 text-blue-400/50">{String.fromCharCode(65 + i)}.</span>
                       {option}
                     </div>
                   </Label>
@@ -314,14 +326,14 @@ export default function ExamPage() {
             )}
 
             {currentQuestion.type === 'MULTIPLE' && (
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-3 md:gap-4">
                 {currentQuestion.options?.map((option, i) => {
                   const isSelected = (answers[currentQuestion.id]?.selectedOption || '').split(', ').includes(option)
                   return (
                     <Label 
                       key={i} 
                       htmlFor={`opt-${i}`}
-                      className={`flex items-center gap-4 p-6 rounded-2xl border-2 transition-all cursor-pointer group ${
+                      className={`flex items-center gap-3 md:gap-4 p-4 md:p-6 rounded-xl md:rounded-2xl border-2 transition-all cursor-pointer group ${
                         isSelected 
                           ? 'border-emerald-500 bg-emerald-500/10' 
                           : 'border-slate-700 bg-slate-700/30 hover:border-slate-600 hover:bg-slate-700/50'
@@ -331,10 +343,10 @@ export default function ExamPage() {
                         id={`opt-${i}`} 
                         checked={isSelected}
                         onCheckedChange={() => handleAnswer(currentQuestion.id, option)}
-                        className="h-6 w-6 border-slate-500 data-[state=checked]:bg-emerald-500"
+                        className="h-5 w-5 md:h-6 md:w-6 border-slate-500 data-[state=checked]:bg-emerald-500 shrink-0"
                       />
-                      <div className="flex-1 text-xl text-slate-200">
-                        <span className="font-black mr-4 text-emerald-400/50">{String.fromCharCode(65 + i)}.</span>
+                      <div className="flex-1 text-base md:text-xl text-slate-200 leading-snug">
+                        <span className="font-black mr-2 md:mr-4 text-emerald-400/50">{String.fromCharCode(65 + i)}.</span>
                         {option}
                       </div>
                     </Label>
@@ -344,36 +356,26 @@ export default function ExamPage() {
             )}
 
             {currentQuestion.type === 'TEXT' && (
-              <div className="space-y-4">
-                <Label className="text-slate-400 text-lg">Your Response</Label>
+              <div className="space-y-3 md:space-y-4">
+                <Label className="text-slate-400 text-base md:text-lg">Your Response</Label>
                 <textarea
                   placeholder="Type your detailed answer here..."
                   value={answers[currentQuestion.id]?.textAnswer || ''}
                   onChange={(e) => handleAnswer(currentQuestion.id, e.target.value)}
-                  className="w-full bg-slate-700/50 border-2 border-slate-700 focus:border-blue-500 p-6 rounded-2xl text-white text-xl min-h-[200px] outline-none transition-all placeholder:text-slate-600"
+                  className="w-full bg-slate-700/50 border-2 border-slate-700 focus:border-blue-500 p-4 md:p-6 rounded-xl md:rounded-2xl text-base md:text-xl text-white min-h-[150px] md:min-h-[200px] outline-none transition-all placeholder:text-slate-600"
                 />
               </div>
             )}
           </CardContent>
         </Card>
 
-        <div className="flex justify-between items-center mt-10">
-          <Button
-            variant="ghost"
-            onClick={() => { saveAnswer(); setCurrentIndex(currentIndex - 1); }}
-            disabled={currentIndex === 0 || batch.examMode}
-            className="text-slate-400 hover:text-white hover:bg-slate-800 h-14 px-8 rounded-2xl border border-slate-700"
-          >
-            <ChevronLeft className="w-5 h-5 mr-2" />
-            Previous
-          </Button>
-          
-          <div className="flex flex-wrap justify-center gap-2 max-w-md">
+        <div className="flex flex-col gap-4 md:gap-6 mt-6 md:mt-10">
+          <div className="flex overflow-x-auto py-2 px-1 gap-2 no-scrollbar justify-start md:justify-center max-w-full">
             {questions.map((_, i) => (
               <button
                 key={i}
                 onClick={() => { saveAnswer(); setCurrentIndex(i); }}
-                className={`w-10 h-10 rounded-xl text-sm font-black transition-all transform hover:scale-110 active:scale-90 ${
+                className={`w-10 h-10 rounded-xl text-sm font-black transition-all transform hover:scale-110 active:scale-90 shrink-0 ${
                   i === currentIndex 
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' 
                     : answers[questions[i].id]
@@ -386,14 +388,26 @@ export default function ExamPage() {
             ))}
           </div>
 
-          <Button
-            onClick={() => { saveAnswer(); setCurrentIndex(currentIndex + 1); }}
-            disabled={currentIndex === questions.length - 1}
-            className="bg-blue-600 hover:bg-blue-700 h-14 px-10 rounded-2xl text-white font-bold shadow-lg shadow-blue-500/20"
-          >
-            Next Question
-            <ChevronRight className="w-5 h-5 ml-2" />
-          </Button>
+          <div className="flex justify-between items-center gap-4">
+            <Button
+              variant="ghost"
+              onClick={() => { saveAnswer(); setCurrentIndex(currentIndex - 1); }}
+              disabled={currentIndex === 0 || batch.examMode}
+              className="text-slate-400 hover:text-white hover:bg-slate-800 h-12 md:h-14 px-4 md:px-8 rounded-xl md:rounded-2xl border border-slate-700 text-sm md:text-base flex-1 md:flex-none"
+            >
+              <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
+              Previous
+            </Button>
+            
+            <Button
+              onClick={() => { saveAnswer(); setCurrentIndex(currentIndex + 1); }}
+              disabled={currentIndex === questions.length - 1}
+              className="bg-blue-600 hover:bg-blue-700 h-12 md:h-14 px-5 md:px-10 rounded-xl md:rounded-2xl text-white font-bold shadow-lg shadow-blue-500/20 text-sm md:text-base flex-1 md:flex-none"
+            >
+              Next Question
+              <ChevronRight className="w-4 h-4 md:w-5 md:h-5 ml-1 md:mr-2" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -103,27 +103,27 @@ export default function StartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4 py-8 md:py-12">
       <div className="w-full max-w-md">
-        <Card className="border-0 shadow-2xl overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6">
-            <div className="flex items-center gap-2 text-white/80 text-sm mb-1">
+        <Card className="border-0 shadow-2xl overflow-hidden rounded-2xl">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-5 md:px-8 md:py-6">
+            <div className="flex items-center gap-2 text-white/80 text-xs md:text-sm mb-1">
               <Shield className="w-4 h-4" />
               <span>{batch.quiz.title}</span>
             </div>
-            <h1 className="text-2xl font-bold text-white">{batch.title}</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-white leading-tight">{batch.title}</h1>
           </div>
           
-          <CardContent className="p-8">
-            <div className="flex items-center gap-2 text-slate-600 mb-6">
-              <Clock className="w-5 h-5" />
+          <CardContent className="p-6 md:p-8">
+            <div className="flex items-center gap-2 text-slate-600 mb-5 md:mb-6 text-sm md:text-base">
+              <Clock className="w-5 h-5 text-slate-400" />
               <span>Duration: <strong>{batch.quiz.durationMinutes} minutes</strong></span>
             </div>
 
-            <form onSubmit={handleStart} className="space-y-5">
+            <form onSubmit={handleStart} className="space-y-4 md:space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-700 font-medium">
-                  <User className="w-4 h-4 inline mr-1" />
+                <Label htmlFor="email" className="text-slate-700 text-sm md:text-base font-medium flex items-center gap-1.5">
+                  <User className="w-4 h-4 text-slate-400" />
                   Email Address
                 </Label>
                 <Input
@@ -133,13 +133,13 @@ export default function StartPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="h-12 bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                  className="h-11 md:h-12 bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-blue-500 text-sm md:text-base rounded-xl"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-slate-700 font-medium">
-                  <User className="w-4 h-4 inline mr-1" />
+                <Label htmlFor="name" className="text-slate-700 text-sm md:text-base font-medium flex items-center gap-1.5">
+                  <User className="w-4 h-4 text-slate-400" />
                   Full Name
                 </Label>
                 <Input
@@ -148,14 +148,14 @@ export default function StartPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="h-12 bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                  className="h-11 md:h-12 bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-blue-500 text-sm md:text-base rounded-xl"
                 />
               </div>
 
               {(batch.ipLockEnabled || batch.deviceLockEnabled) && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs md:text-sm text-amber-800">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0 text-amber-600" />
                     <p>Your IP address and device information will be recorded for security purposes.</p>
                   </div>
                 </div>
@@ -163,11 +163,11 @@ export default function StartPage() {
 
               <Button 
                 type="submit" 
-                className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg font-medium"
+                className="w-full h-11 md:h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-base md:text-lg font-bold rounded-xl shadow-lg shadow-blue-500/10"
                 disabled={submitting}
               >
                 {submitting ? (
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     Starting...
                   </span>
@@ -177,8 +177,8 @@ export default function StartPage() {
               </Button>
             </form>
 
-            <div className="mt-6 pt-6 border-t border-slate-100 text-center">
-              <Link href={`/quiz/${params.batchId}`} className="text-sm text-slate-500 hover:text-slate-700">
+            <div className="mt-5 pt-5 md:mt-6 md:pt-6 border-t border-slate-100 text-center">
+              <Link href={`/quiz/${params.batchId}`} className="text-xs md:text-sm text-slate-500 hover:text-slate-700 font-medium">
                 ← Back to Quiz Info
               </Link>
             </div>

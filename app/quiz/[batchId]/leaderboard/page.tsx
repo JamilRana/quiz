@@ -64,25 +64,25 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 md:py-12 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full mb-4">
-            <Trophy className="w-8 h-8 text-white" />
+        <div className="text-center mb-6 md:mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full mb-3 md:mb-4 shadow-md">
+            <Trophy className="w-6 h-6 md:w-8 md:h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Leaderboard</h1>
-          <p className="text-gray-500 mt-2">See how you stack up against other participants</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Leaderboard</h1>
+          <p className="text-sm md:text-base text-gray-500 mt-1 md:mt-2">See how you stack up against other participants</p>
         </div>
 
         {data?.userRank && (
-          <Card className="mb-6 border-2 border-blue-500">
-            <CardContent className="pt-6">
+          <Card className="mb-5 md:mb-6 border-2 border-blue-500 rounded-xl md:rounded-2xl">
+            <CardContent className="p-4 md:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Your Rank</p>
-                  <p className="text-3xl font-bold text-blue-600">#{data.userRank}</p>
+                  <p className="text-xs md:text-sm text-gray-500">Your Rank</p>
+                  <p className="text-2xl md:text-3xl font-bold text-blue-600">#{data.userRank}</p>
                 </div>
-                <Badge variant="default" className="text-lg py-2 px-4">
+                <Badge variant="default" className="text-sm md:text-lg py-1 px-3 md:py-2 md:px-4 rounded-lg">
                   Score: {data.leaderboard?.find(e => e.id === responseId)?.totalScore || 0}
                 </Badge>
               </div>
@@ -98,23 +98,23 @@ export default function LeaderboardPage() {
             return (
               <Card
                 key={entry.id}
-                className={`${getRankBg(rank)} ${isCurrentUser ? 'ring-2 ring-blue-500' : ''}`}
+                className={`${getRankBg(rank)} ${isCurrentUser ? 'ring-2 ring-blue-500' : ''} rounded-xl md:rounded-2xl border-none shadow-sm`}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 flex justify-center">
+                <CardContent className="p-3 md:p-4">
+                  <div className="flex items-center gap-2 md:gap-4">
+                    <div className="w-8 md:w-10 flex justify-center shrink-0">
                       {getRankIcon(rank)}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm md:text-base text-gray-900 truncate">
                         {entry.name || entry.email}
-                        {isCurrentUser && <Badge className="ml-2 bg-blue-100 text-blue-800">You</Badge>}
+                        {isCurrentUser && <Badge className="ml-2 bg-blue-100 text-blue-800 text-[10px] md:text-xs">You</Badge>}
                       </p>
-                      <p className="text-sm text-gray-500">{entry.email}</p>
+                      <p className="text-xs text-gray-500 truncate">{entry.email}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold">{entry.totalScore}</p>
-                      <p className="text-xs text-gray-400">
+                    <div className="text-right shrink-0">
+                      <p className="text-lg md:text-xl font-bold text-gray-900">{entry.totalScore}</p>
+                      <p className="text-[10px] md:text-xs text-gray-400">
                         {entry.submittedAt ? new Date(entry.submittedAt).toLocaleTimeString() : '-'}
                       </p>
                     </div>
@@ -126,7 +126,7 @@ export default function LeaderboardPage() {
         </div>
 
         {data?.leaderboard?.length === 0 && (
-          <Card>
+          <Card className="rounded-xl">
             <CardContent className="py-10 text-center text-gray-500">
               No submissions yet. Be the first!
             </CardContent>
@@ -134,7 +134,7 @@ export default function LeaderboardPage() {
         )}
 
         <div className="text-center mt-6">
-          <Button variant="outline" onClick={() => mutate()}>
+          <Button variant="outline" onClick={() => mutate()} className="rounded-xl">
             <RefreshCw className="w-4 h-4 mr-2" /> Refresh
           </Button>
         </div>
