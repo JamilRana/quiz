@@ -38,7 +38,7 @@ export const questionSchema = z.object({
   type: z.enum(['SINGLE', 'MULTIPLE', 'TEXT']),
   difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).default('MEDIUM'),
   options: z.any().optional(), // Json
-  correctAnswer: z.string().min(1, 'Correct answer is required'),
+  correctAnswer: z.any(),
   explanation: z.string().optional().nullable(),
 })
 
@@ -58,8 +58,7 @@ export const startExamSchema = z.object({
 export const submitAnswerSchema = z.object({
   responseId: z.string().min(1),
   questionId: z.string().min(1),
-  textAnswer: z.string().optional(),
-  selectedOption: z.string().optional(), // For MCQs
+  answer: z.any().optional(),
 })
 
 export const loginSchema = z.object({

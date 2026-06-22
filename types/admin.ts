@@ -188,3 +188,22 @@ export interface MetricCardProps {
   icon: React.ElementType
   color: string
 }
+
+export interface AdminUser {
+  id: string
+  email: string
+  name: string | null
+  role: 'ADMIN' | 'INSTRUCTOR'
+  isActive: boolean
+  lastLoginAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AdminUsersResponse {
+  admins: AdminUser[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}

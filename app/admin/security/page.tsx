@@ -55,68 +55,68 @@ export default function SecurityLogsPage() {
   }
 
   if (isLoading) {
-    return <div className="p-8">Loading...</div>
+    return <div className="p-4 md:p-8">Loading...</div>
   }
 
   const totalPages = Math.ceil((data?.total || 0) / 20)
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 md:mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Security Logs</h1>
-            <p className="text-gray-500">Monitor suspicious activities and security events</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Security Logs</h1>
+            <p className="text-gray-500 text-sm md:text-base">Monitor suspicious activities and security events</p>
           </div>
-          <Button variant="outline" onClick={() => mutate()}>
+          <Button variant="outline" onClick={() => mutate()} className="w-full sm:w-auto">
             <RefreshCw className="h-4 w-4 mr-2" /> Refresh
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Failed Starts</CardTitle>
+              <CardTitle className="text-xs md:text-sm font-medium">Failed Starts</CardTitle>
               <AlertTriangle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{data?.stats.failedStarts || 0}</div>
+              <div className="text-xl md:text-2xl font-bold text-red-600">{data?.stats.failedStarts || 0}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Duplicate Devices</CardTitle>
+              <CardTitle className="text-xs md:text-sm font-medium">Duplicate Devices</CardTitle>
               <Monitor className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{data?.stats.duplicateDevices || 0}</div>
+              <div className="text-xl md:text-2xl font-bold text-orange-600">{data?.stats.duplicateDevices || 0}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Duplicate IPs</CardTitle>
+              <CardTitle className="text-xs md:text-sm font-medium">Duplicate IPs</CardTitle>
               <Globe className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{data?.stats.duplicateIps || 0}</div>
+              <div className="text-xl md:text-2xl font-bold text-yellow-600">{data?.stats.duplicateIps || 0}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Tab Switches</CardTitle>
+              <CardTitle className="text-xs md:text-sm font-medium">Tab Switches</CardTitle>
               <Clock className="h-4 w-4 text-purple-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-purple-600">{data?.stats.tabSwitches || 0}</div>
+              <div className="text-xl md:text-2xl font-bold text-purple-600">{data?.stats.tabSwitches || 0}</div>
             </CardContent>
           </Card>
         </div>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <CardTitle>Activity Log</CardTitle>
             <Select value={filter} onValueChange={(value) => { setFilter(value); setPage(1) }}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>

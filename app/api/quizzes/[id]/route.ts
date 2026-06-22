@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { requireInstructorOrAdmin } from '@/lib/auth-middleware'
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const authResult = await requireInstructorOrAdmin()
+    if (authResult instanceof NextResponse) return authResult
 
     const quiz = await (prisma.quiz.findUnique({
       where: { id: params.id },
@@ -46,8 +43,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const authResult = await requireInstructorOrAdmin()
+    if (authResult instanceof NextResponse) return authResult
 
     const body = await request.json()
     const { title, description, subjectIds, durationMinutes, isActive, showLeaderboard, examMode } = body
@@ -85,8 +82,8 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const authResult = await requireInstructorOrAdmin()
+    if (authResult instanceof NextResponse) return authResult
 
     await prisma.quiz.delete({
       where: { id: params.id },

@@ -472,11 +472,16 @@ export default function QuizDetailPage() {
                         </div>
                         {q.options && Array.isArray(q.options) && (
                           <ul className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {(q.options as string[]).map((o, idx) => (
-                              <li key={idx} className={`text-sm p-3 rounded-xl border ${o === q.correctAnswer ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-bold' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
-                                <span className="opacity-50 mr-2">{String.fromCharCode(65 + idx)}.</span> {o} {o === q.correctAnswer && '✓'}
-                              </li>
-                            ))}
+                            {(q.options as string[]).map((o, idx) => {
+                              const isCorrect = Array.isArray(q.correctAnswer)
+                                ? q.correctAnswer.some((ans: any) => String(ans).trim().toLowerCase() === o.trim().toLowerCase())
+                                : String(q.correctAnswer).trim().toLowerCase() === o.trim().toLowerCase();
+                              return (
+                                <li key={idx} className={`text-sm p-3 rounded-xl border ${isCorrect ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-bold' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
+                                  <span className="opacity-50 mr-2">{String.fromCharCode(65 + idx)}.</span> {o} {isCorrect && '✓'}
+                                </li>
+                              )
+                            })}
                           </ul>
                         )}
                       </div>

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { requireInstructorOrAdmin } from '@/lib/auth-middleware'
 import { z } from 'zod'
 
 const updateSchema = z.object({
@@ -12,8 +11,8 @@ const updateSchema = z.object({
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const authResult = await requireInstructorOrAdmin()
+    if (authResult instanceof NextResponse) return authResult
     const body = await request.json()
     const data = updateSchema.parse(body)
     const batch = await prisma.batch.update({ where: { id: params.id }, data })

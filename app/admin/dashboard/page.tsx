@@ -31,37 +31,35 @@ export default function AdminDashboardPage() {
 
   if (!mounted || loadingStats) {
     return (
-      <div className="p-8 space-y-8 animate-pulse bg-slate-50 dark:bg-slate-900 min-h-screen">
-        <div className="h-10 bg-slate-200 w-1/4 rounded-lg"></div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-slate-200 rounded-2xl"></div>)}
+      <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-pulse bg-slate-50 dark:bg-slate-900 min-h-screen">
+        <div className="h-8 md:h-10 bg-slate-200 w-2/4 md:w-1/4 rounded-lg"></div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+          {[1, 2, 3, 4].map(i => <div key={i} className="h-24 md:h-32 bg-slate-200 rounded-2xl"></div>)}
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-8 space-y-8 animate-in fade-in duration-700 bg-slate-50 dark:bg-slate-900 min-h-screen">
-      <div className="flex justify-between items-center">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in fade-in duration-700 bg-slate-50 dark:bg-slate-900 min-h-screen">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             System Overview
           </h1>
-          <p className="text-slate-500 mt-1">
+          <p className="text-slate-500 mt-1 text-sm md:text-base">
             Welcome back, <span className="text-blue-600 font-bold">{session?.user?.name || session?.user?.email}</span>
           </p>
         </div>
-        <div className="flex gap-4">
-          <Link href="/admin/quizzes/create">
-            <Button className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 px-6 h-12 rounded-xl">
-              <Zap className="w-4 h-4 mr-2" />
-              Quick Create Quiz
-            </Button>
-          </Link>
-        </div>
+        <Link href="/admin/quizzes/create" className="w-full sm:w-auto">
+          <Button className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 px-6 h-12 rounded-xl w-full sm:w-auto">
+            <Zap className="w-4 h-4 mr-2" />
+            Quick Create Quiz
+          </Button>
+        </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         <StatCard title="Total Subjects" value={stats?.totalSubjects} icon={BookOpen} color="blue" />
         <StatCard title="Question Bank" value={stats?.totalQuestions} icon={HelpCircle} color="indigo" />
         <StatCard title="Total Responses" value={stats?.totalResponses} icon={Users} color="emerald" />

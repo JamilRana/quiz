@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { requireInstructorOrAdmin } from '@/lib/auth-middleware'
 
 export async function DELETE(
   req: Request,
   { params }: { params: { id: string, questionId: string } }
 ) {
-  const session = await getServerSession(authOptions)
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const authResult = await requireInstructorOrAdmin()
+  if (authResult instanceof NextResponse) return authResult
 
   try {
     await prisma.quizQuestion.delete({

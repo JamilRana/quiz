@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/use-toast'
-import { Clock, AlertTriangle, ChevronLeft, ChevronRight, Send, Eye, EyeOff, CheckSquare } from 'lucide-react'
+import { Clock, AlertTriangle, ChevronLeft, ChevronRight, Send, Eye, EyeOff, CheckSquare, Lock } from 'lucide-react'
 import { Question, ExamBatch } from '@/types/quiz'
 
 export default function ExamPage() {
@@ -22,12 +22,20 @@ export default function ExamPage() {
   const [batch, setBatch] = useState<ExamBatch | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [answers, setAnswers] = useState<Record<string, { textAnswer?: string; selectedOption?: string }>>({})
+  const [answers, setAnswers] = useState<Record<string, any>>({})
+  const [lockedQuestions, setLockedQuestions] = useState<Record<string, boolean>>({})
   const [timeLeft, setTimeLeft] = useState(0)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [tabWarning, setTabWarning] = useState(false)
   const [showTimer, setShowTimer] = useState(true)
+
+  const hasAnswer = useCallback((qId: string) => {
+    const ans = answers[qId]
+    if (ans === undefined || ans === null) return false
+    if (Array.isArray(ans)) return ans.length > 0
+    return String(ans).trim() !== ''
+  }, [answers])
 
   const fetchExam = useCallback(async () => {
     try {
@@ -37,6 +45,21 @@ export default function ExamPage() {
         setBatch(data.batch)
         setQuestions(data.questions)
         setAnswers(data.existingAnswers || {})
+        
+        // Pre-populate lockedQuestions based on existing answers
+        const initialLocked: Record<string, boolean> = {}
+        if (data.existingAnswers) {
+          Object.keys(data.existingAnswers).forEach((qId) => {
+            const ans = data.existingAnswers[qId]
+            const hasVal = Array.isArray(ans)
+              ? ans.length > 0
+              : ans !== undefined && ans !== null && String(ans).trim() !== ''
+            if (hasVal) {
+              initialLocked[qId] = true
+            }
+          })
+        }
+        setLockedQuestions(initialLocked)
         
         if (data.startedAt) {
           const elapsed = Math.floor((Date.now() - new Date(data.startedAt).getTime()) / 1000)
@@ -60,20 +83,39 @@ export default function ExamPage() {
     }
   }, [responseId, router, toast])
 
+  const saveAnswer = useCallback(async () => {
+    const currentQId = questions[currentIndex]?.id
+    if (!currentQId) return
+    try {
+      await fetch('/api/responses/answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          responseId,
+          questionId: currentQId,
+          answer: answers[currentQId],
+        }),
+      })
+    } catch {
+      console.error('Failed to save answer')
+    }
+  }, [responseId, currentIndex, answers, questions])
+
   const handleSubmit = useCallback(async () => {
     if (submitting) return
     setSubmitting(true)
 
     try {
       // Save current answer one last time before submitting
-      if (questions[currentIndex]) {
+      const currentQId = questions[currentIndex]?.id
+      if (currentQId) {
         await fetch('/api/responses/answer', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             responseId,
-            questionId: questions[currentIndex].id,
-            ...answers[questions[currentIndex].id],
+            questionId: currentQId,
+            answer: answers[currentQId],
           }),
         })
       }
@@ -83,9 +125,19 @@ export default function ExamPage() {
       })
 
       if (res.ok) {
-        router.push(`/quiz/${batch?.id}/submit?responseId=${responseId}`)
+        const data = await res.json()
+        if (data.redirectUrl) {
+          router.push(data.redirectUrl)
+        } else {
+          router.push(`/quiz/${batch?.id}/submit?responseId=${responseId}`)
+        }
       } else {
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to submit' })
+        const errorData = await res.json()
+        if (errorData.redirectUrl) {
+          router.push(errorData.redirectUrl)
+        } else {
+          toast({ variant: 'destructive', title: 'Error', description: errorData.error || 'Failed to submit' })
+        }
       }
     } catch {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to submit' })
@@ -143,6 +195,8 @@ export default function ExamPage() {
   }, [batch?.examMode, responseId])
 
   const handleAnswer = (questionId: string, value: string) => {
+    if (lockedQuestions[questionId]) return
+
     const question = questions.find((q) => q.id === questionId)
     if (!question) return
 
@@ -150,38 +204,40 @@ export default function ExamPage() {
       const current = prev[questionId]
       
       if (question.type === 'MULTIPLE') {
-        const selected = current?.selectedOption ? current.selectedOption.split(', ') : []
+        const selected = Array.isArray(current) ? current : []
         const newSelected = selected.includes(value)
           ? selected.filter(v => v !== value)
           : [...selected, value].sort()
         
         return {
           ...prev,
-          [questionId]: { selectedOption: newSelected.join(', ') }
+          [questionId]: newSelected
         }
       }
 
       return {
         ...prev,
-        [questionId]: question.type === 'TEXT' ? { textAnswer: value } : { selectedOption: value }
+        [questionId]: value
       }
     })
   }
 
-  const saveAnswer = async () => {
-    try {
-      await fetch('/api/responses/answer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          responseId,
-          questionId: questions[currentIndex].id,
-          ...answers[questions[currentIndex].id],
-        }),
-      })
-    } catch {
-      console.error('Failed to save answer')
+  const navigateTo = async (newIndex: number) => {
+    if (newIndex < 0 || newIndex >= questions.length) return
+    
+    const currentQId = questions[currentIndex]?.id
+    if (currentQId) {
+      const hasVal = hasAnswer(currentQId)
+      if (hasVal) {
+        setLockedQuestions(prev => ({
+          ...prev,
+          [currentQId]: true
+        }))
+      }
+      await saveAnswer()
     }
+    
+    setCurrentIndex(newIndex)
   }
 
   const formatTime = (seconds: number) => {
@@ -216,6 +272,7 @@ export default function ExamPage() {
   const currentQuestion = questions[currentIndex]
   const progress = ((currentIndex + 1) / questions.length) * 100
   const isLowTime = timeLeft < 300
+  const answeredCount = Object.keys(answers).filter(hasAnswer).length
 
   return (
     <div className="min-h-screen bg-slate-900 font-sans">
@@ -256,7 +313,7 @@ export default function ExamPage() {
               </h1>
               <div className="flex items-center gap-2 md:gap-3 text-xs md:text-sm text-slate-400">
                 <span className="bg-slate-700 px-1.5 py-0.5 rounded text-blue-400 font-bold shrink-0">Q{currentIndex + 1} / {questions.length}</span>
-                <span className="bg-slate-700 px-1.5 py-0.5 rounded text-emerald-400 font-bold shrink-0">{Object.keys(answers).length} Answered</span>
+                <span className="bg-slate-700 px-1.5 py-0.5 rounded text-emerald-400 font-bold shrink-0">{answeredCount} Answered</span>
               </div>
             </div>
             <div className="flex items-center gap-2 md:gap-6 shrink-0">
@@ -290,9 +347,17 @@ export default function ExamPage() {
         <Card className="bg-slate-800 border-none shadow-2xl rounded-2xl md:rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-500">
           <CardHeader className="p-5 md:pb-8 md:pt-10 md:px-10 border-b border-slate-700/50">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-              <CardTitle className="text-xl md:text-3xl text-white leading-tight font-extrabold">
-                {currentQuestion.text}
-              </CardTitle>
+              <div className="space-y-2">
+                <CardTitle className="text-xl md:text-3xl text-white leading-tight font-extrabold">
+                  {currentQuestion.text}
+                </CardTitle>
+                {lockedQuestions[currentQuestion.id] && (
+                  <div className="flex items-center gap-2 text-amber-500 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold w-fit animate-in fade-in zoom-in duration-300">
+                    <Lock className="w-3.5 h-3.5 shrink-0" />
+                    Answer Locked
+                  </div>
+                )}
+              </div>
               <div className="shrink-0 bg-blue-600/10 text-blue-400 border border-blue-600/20 px-3 py-1 md:px-4 md:py-1.5 rounded-full text-xs md:text-sm font-black uppercase tracking-widest">
                 {currentQuestion.marks} PTS
               </div>
@@ -301,8 +366,9 @@ export default function ExamPage() {
           <CardContent className="p-5 md:p-10">
             {currentQuestion.type === 'SINGLE' && (
               <RadioGroup
-                value={answers[currentQuestion.id]?.selectedOption || ''}
+                value={answers[currentQuestion.id] || ''}
                 onValueChange={(v) => handleAnswer(currentQuestion.id, v)}
+                disabled={lockedQuestions[currentQuestion.id]}
                 className="grid grid-cols-1 gap-3 md:gap-4"
               >
                 {currentQuestion.options?.map((option, i) => (
@@ -310,12 +376,12 @@ export default function ExamPage() {
                     key={i} 
                     htmlFor={`opt-${i}`}
                     className={`flex items-center gap-3 md:gap-4 p-4 md:p-6 rounded-xl md:rounded-2xl border-2 transition-all cursor-pointer group ${
-                      answers[currentQuestion.id]?.selectedOption === option 
+                      answers[currentQuestion.id] === option 
                         ? 'border-blue-500 bg-blue-500/10' 
                         : 'border-slate-700 bg-slate-700/30 hover:border-slate-600 hover:bg-slate-700/50'
-                    }`}
+                    } ${lockedQuestions[currentQuestion.id] ? 'opacity-70 cursor-not-allowed' : ''}`}
                   >
-                    <RadioGroupItem value={option} id={`opt-${i}`} className="h-5 w-5 md:h-6 md:w-6 border-slate-500 text-blue-500 shrink-0" />
+                    <RadioGroupItem value={option} id={`opt-${i}`} disabled={lockedQuestions[currentQuestion.id]} className="h-5 w-5 md:h-6 md:w-6 border-slate-500 text-blue-500 shrink-0" />
                     <div className="flex-1 text-base md:text-xl text-slate-200 leading-snug">
                       <span className="font-black mr-2 md:mr-4 text-blue-400/50">{String.fromCharCode(65 + i)}.</span>
                       {option}
@@ -328,7 +394,7 @@ export default function ExamPage() {
             {currentQuestion.type === 'MULTIPLE' && (
               <div className="grid grid-cols-1 gap-3 md:gap-4">
                 {currentQuestion.options?.map((option, i) => {
-                  const isSelected = (answers[currentQuestion.id]?.selectedOption || '').split(', ').includes(option)
+                  const isSelected = Array.isArray(answers[currentQuestion.id]) && answers[currentQuestion.id].includes(option)
                   return (
                     <Label 
                       key={i} 
@@ -337,11 +403,12 @@ export default function ExamPage() {
                         isSelected 
                           ? 'border-emerald-500 bg-emerald-500/10' 
                           : 'border-slate-700 bg-slate-700/30 hover:border-slate-600 hover:bg-slate-700/50'
-                      }`}
+                      } ${lockedQuestions[currentQuestion.id] ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
                       <Checkbox 
                         id={`opt-${i}`} 
                         checked={isSelected}
+                        disabled={lockedQuestions[currentQuestion.id]}
                         onCheckedChange={() => handleAnswer(currentQuestion.id, option)}
                         className="h-5 w-5 md:h-6 md:w-6 border-slate-500 data-[state=checked]:bg-emerald-500 shrink-0"
                       />
@@ -360,9 +427,10 @@ export default function ExamPage() {
                 <Label className="text-slate-400 text-base md:text-lg">Your Response</Label>
                 <textarea
                   placeholder="Type your detailed answer here..."
-                  value={answers[currentQuestion.id]?.textAnswer || ''}
+                  value={answers[currentQuestion.id] || ''}
+                  disabled={lockedQuestions[currentQuestion.id]}
                   onChange={(e) => handleAnswer(currentQuestion.id, e.target.value)}
-                  className="w-full bg-slate-700/50 border-2 border-slate-700 focus:border-blue-500 p-4 md:p-6 rounded-xl md:rounded-2xl text-base md:text-xl text-white min-h-[150px] md:min-h-[200px] outline-none transition-all placeholder:text-slate-600"
+                  className="w-full bg-slate-700/50 border-2 border-slate-700 focus:border-blue-500 p-4 md:p-6 rounded-xl md:rounded-2xl text-base md:text-xl text-white min-h-[150px] md:min-h-[200px] outline-none transition-all placeholder:text-slate-600 disabled:opacity-70 disabled:cursor-not-allowed"
                 />
               </div>
             )}
@@ -374,16 +442,20 @@ export default function ExamPage() {
             {questions.map((_, i) => (
               <button
                 key={i}
-                onClick={() => { saveAnswer(); setCurrentIndex(i); }}
-                className={`w-10 h-10 rounded-xl text-sm font-black transition-all transform hover:scale-110 active:scale-90 shrink-0 ${
+                onClick={() => navigateTo(i)}
+                className={`w-10 h-10 rounded-xl text-sm font-black transition-all transform hover:scale-110 active:scale-90 shrink-0 flex items-center justify-center ${
                   i === currentIndex 
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' 
-                    : answers[questions[i].id]
+                    : hasAnswer(questions[i].id)
                       ? 'bg-emerald-600 text-white'
                       : 'bg-slate-800 text-slate-500 border border-slate-700'
                 }`}
               >
-                {i + 1}
+                {lockedQuestions[questions[i].id] ? (
+                  <Lock className="w-3.5 h-3.5 text-white" />
+                ) : (
+                  i + 1
+                )}
               </button>
             ))}
           </div>
@@ -391,8 +463,8 @@ export default function ExamPage() {
           <div className="flex justify-between items-center gap-4">
             <Button
               variant="ghost"
-              onClick={() => { saveAnswer(); setCurrentIndex(currentIndex - 1); }}
-              disabled={currentIndex === 0 || batch.examMode}
+              onClick={() => navigateTo(currentIndex - 1)}
+              disabled={currentIndex === 0}
               className="text-slate-400 hover:text-white hover:bg-slate-800 h-12 md:h-14 px-4 md:px-8 rounded-xl md:rounded-2xl border border-slate-700 text-sm md:text-base flex-1 md:flex-none"
             >
               <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
@@ -400,7 +472,7 @@ export default function ExamPage() {
             </Button>
             
             <Button
-              onClick={() => { saveAnswer(); setCurrentIndex(currentIndex + 1); }}
+              onClick={() => navigateTo(currentIndex + 1)}
               disabled={currentIndex === questions.length - 1}
               className="bg-blue-600 hover:bg-blue-700 h-12 md:h-14 px-5 md:px-10 rounded-xl md:rounded-2xl text-white font-bold shadow-lg shadow-blue-500/20 text-sm md:text-base flex-1 md:flex-none"
             >

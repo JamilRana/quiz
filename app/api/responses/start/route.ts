@@ -10,6 +10,7 @@ export async function POST(request: Request) {
 
     const batch = await prisma.batch.findUnique({
       where: { id: validatedData.batchId },
+      include: { quiz: { select: { showLeaderboard: true } } },
     })
 
     if (!batch || !batch.isActive) {
@@ -51,7 +52,17 @@ export async function POST(request: Request) {
 
     if (existingEmail) {
       if (existingEmail.isComplete) {
-        return NextResponse.json({ error: 'Quiz already submitted' }, { status: 400 })
+        const showLeaderboard = batch.quiz?.showLeaderboard && batch.leaderboardVisible
+        return NextResponse.json({
+          error: 'Already completed',
+          responseId: existingEmail.id,
+          isComplete: true,
+          showLeaderboard,
+          score: existingEmail.totalScore,
+          redirectUrl: showLeaderboard
+            ? `/quiz/${batch.id}/leaderboard?responseId=${existingEmail.id}`
+            : `/quiz/${batch.id}/submit?responseId=${existingEmail.id}`,
+        }, { status: 400 })
       }
       if (batch.strictIpMode || batch.strictDeviceMode) {
         return NextResponse.json({ error: 'Email already registered' }, { status: 400 })
@@ -95,9 +106,31 @@ export async function POST(request: Request) {
       const isFlagged = counts.some((count) => count > 0)
 
       if (isFlagged) {
+        const reasons: string[] = []
+        if (batch.ipLockEnabled && counts[0] > 0) reasons.push('IP address reuse detected')
+        if (batch.deviceLockEnabled && counts[1] > 0) reasons.push('Device reuse detected')
+
         await prisma.response.update({
           where: { id: response.id },
-          data: { isFlagged: true, flagReason: 'Multiple attempts from same IP or device' },
+          data: {
+            isFlagged: true,
+            flagReason: reasons.join('; '),
+          },
+        })
+
+        await prisma.auditLog.create({
+          data: {
+            responseId: response.id,
+            batchId: batch.id,
+            action: 'FLAG_DUPLICATE',
+            details: {
+              reasons,
+              ipAddress,
+              deviceHash: body.deviceHash,
+            },
+            ipAddress,
+            severity: 'WARNING',
+          },
         })
       }
     }

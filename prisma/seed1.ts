@@ -51,7 +51,7 @@ async function main() {
       text: "Which of these are human organs?",
       type: QuestionType.MULTIPLE,
       options: ["Heart", "Leaf", "Lungs", "Branch"],
-      correctAnswer: "Heart, Lungs", // Simple string matching logic used in API currently
+      correctAnswer: ["Heart", "Lungs"],
       difficulty: Difficulty.EASY,
     }
   });

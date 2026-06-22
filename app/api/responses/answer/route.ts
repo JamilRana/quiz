@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { responseId, questionId, textAnswer, selectedOption } = body
+    const { responseId, questionId, answer } = body
 
     if (!responseId || !questionId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -46,13 +46,39 @@ export async function POST(request: Request) {
     let isCorrect = false
     let score = 0
 
-    const providedAnswer = textAnswer || selectedOption
-
     if (question.type === 'TEXT') {
-      // Manual grading usually required for text, but we can store it
-      score = 0 
-    } else {
-      isCorrect = providedAnswer?.toString().trim().toLowerCase() === question.correctAnswer.trim().toLowerCase()
+      // Manual grading usually required for text
+      score = 0
+    } else if (question.type === 'MULTIPLE') {
+      const correctList = Array.isArray(question.correctAnswer)
+        ? question.correctAnswer
+        : typeof question.correctAnswer === 'string'
+          ? question.correctAnswer.split(',').map(s => s.trim())
+          : []
+      
+      const studentList = Array.isArray(answer)
+        ? answer
+        : typeof answer === 'string'
+          ? answer.split(',').map(s => s.trim())
+          : []
+
+      const normCorrect = correctList.map((x: any) => String(x).trim().toLowerCase()).sort()
+      const normStudent = studentList.map((x: any) => String(x).trim().toLowerCase()).sort()
+
+      if (normCorrect.length > 0 && normCorrect.length === normStudent.length) {
+        isCorrect = normCorrect.every((val, index) => val === normStudent[index])
+      }
+      score = isCorrect ? quizQuestion.marks : 0
+    } else { // SINGLE
+      const correctVal = typeof question.correctAnswer === 'string' 
+        ? question.correctAnswer.trim().toLowerCase() 
+        : String(question.correctAnswer || '').trim().toLowerCase()
+      
+      const studentVal = typeof answer === 'string' 
+        ? answer.trim().toLowerCase() 
+        : String(answer || '').trim().toLowerCase()
+      
+      isCorrect = correctVal === studentVal && correctVal !== ''
       score = isCorrect ? quizQuestion.marks : 0
     }
 
@@ -60,25 +86,25 @@ export async function POST(request: Request) {
       where: { responseId, questionId },
     })
 
-    let answer
+    let savedAnswer
     if (existingAnswer) {
-      answer = await prisma.answer.update({
+      savedAnswer = await prisma.answer.update({
         where: { id: existingAnswer.id },
-        data: { textAnswer: providedAnswer, isCorrect, score },
+        data: { answer, isCorrect, score },
       })
     } else {
-      answer = await prisma.answer.create({
+      savedAnswer = await prisma.answer.create({
         data: {
           responseId,
           questionId,
-          textAnswer: providedAnswer,
+          answer,
           isCorrect,
           score,
         },
       })
     }
 
-    return NextResponse.json(answer)
+    return NextResponse.json(savedAnswer)
   } catch (error) {
     console.error('Answer POST error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

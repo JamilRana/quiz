@@ -48,6 +48,7 @@ export async function GET(
       email: r.email,
       name: r.name,
       score: r.totalScore,
+      totalScore: r.totalScore,
       submittedAt: r.submittedAt,
     }))
 

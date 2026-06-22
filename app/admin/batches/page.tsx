@@ -191,12 +191,12 @@ export default function BatchesPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 md:mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Batches</h1>
-            <p className="text-gray-500">Manage quiz batches/sessions</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Batches</h1>
+            <p className="text-gray-500 text-sm md:text-base">Manage quiz batches/sessions</p>
           </div>
           <Dialog open={showCreate} onOpenChange={(open) => {
             setShowCreate(open)
@@ -206,7 +206,7 @@ export default function BatchesPage() {
             }
           }}>
             <DialogTrigger asChild>
-              <Button onClick={() => { setShowCreate(true); setEditingBatch(null); resetForm() }}>
+              <Button onClick={() => { setShowCreate(true); setEditingBatch(null); resetForm() }} className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" /> Create Batch
               </Button>
             </DialogTrigger>
@@ -312,7 +312,7 @@ export default function BatchesPage() {
 
         <Card className="mb-6">
           <CardContent className="pt-6">
-            <form onSubmit={handleSearch} className="flex gap-4">
+            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -326,7 +326,7 @@ export default function BatchesPage() {
                 value={filters.quizId}
                 onValueChange={(value) => { setFilters({ ...filters, quizId: value }); setPagination(p => ({ ...p, page: 1 })) }}
               >
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Filter by quiz" />
                 </SelectTrigger>
                 <SelectContent>
@@ -340,7 +340,7 @@ export default function BatchesPage() {
                 value={filters.status}
                 onValueChange={(value) => { setFilters({ ...filters, status: value }); setPagination(p => ({ ...p, page: 1 })) }}
               >
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -349,7 +349,7 @@ export default function BatchesPage() {
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
-              <Button type="submit" variant="secondary">
+              <Button type="submit" variant="secondary" className="w-full sm:w-auto">
                 <Filter className="h-4 w-4 mr-2" /> Filter
               </Button>
             </form>

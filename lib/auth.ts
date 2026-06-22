@@ -20,7 +20,7 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         })
 
-        if (!admin) {
+        if (!admin || !admin.isActive) {
           return null
         }
 
@@ -30,10 +30,17 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        // Update last login
+        await prisma.admin.update({
+          where: { id: admin.id },
+          data: { lastLoginAt: new Date() },
+        })
+
         return {
           id: admin.id,
           email: admin.email,
           name: admin.name,
+          role: admin.role,
         }
       },
     }),
@@ -45,12 +52,24 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
+        token.role = (user as any).role
+      }
+      // Ensure role is always populated (handles legacy tokens without role)
+      if (!token.role && token.email) {
+        const admin = await prisma.admin.findUnique({
+          where: { email: token.email },
+          select: { role: true },
+        })
+        if (admin) {
+          token.role = admin.role
+        }
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
+        session.user.role = token.role as string
       }
       return session
     },

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { signOut } from 'next-auth/react'
 import { cn } from '@/lib/utils'
 import { 
@@ -14,28 +15,43 @@ import {
   LogOut,
   Users,
   BookOpen,
-  ClipboardList
+  ClipboardList,
+  UserCog,
+  X
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 
-const navItems = [
+interface NavItem {
+  href: string
+  label: string
+  icon: React.ElementType
+  adminOnly?: boolean
+}
+
+const navItems: NavItem[] = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/subjects', label: 'Subjects', icon: BookOpen },
   { href: '/admin/questions', label: 'Question Bank', icon: FileQuestion },
   { href: '/admin/quizzes', label: 'Quizzes', icon: ClipboardList },
   { href: '/admin/batches', label: 'Batches', icon: Users },
+  { href: '/admin/users', label: 'User Management', icon: UserCog, adminOnly: true },
   { href: '/admin/security', label: 'Security Logs', icon: Shield },
   { href: '/admin/import', label: 'Import Export', icon: Upload },
 ]
 
 interface SidebarProps {
   className?: string
+  onClose?: () => void
 }
 
-export function Sidebar({ className }: SidebarProps) {
+export function Sidebar({ className, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const { data: session } = useSession()
   const [collapsed, setCollapsed] = useState(false)
+  const isAdmin = session?.user?.role === 'ADMIN'
+
+  const filteredNavItems = navItems.filter(item => !item.adminOnly || isAdmin)
 
   return (
     <aside
@@ -46,32 +62,45 @@ export function Sidebar({ className }: SidebarProps) {
       )}
     >
       <div className="flex h-full flex-col">
-        <div className="flex h-16 items-center justify-between px-4 border-b border-slate-800">
+        <div className="flex h-14 lg:h-16 items-center justify-between px-4 border-b border-slate-800">
           {!collapsed && (
-            <Link href="/admin/dashboard" className="flex items-center gap-2">
+            <Link href="/admin/dashboard" className="flex items-center gap-2" onClick={onClose}>
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <Shield className="w-4 h-4 text-white" />
               </div>
               <span className="font-bold text-white">Admin Panel</span>
             </Link>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCollapsed(!collapsed)}
-            className="text-slate-400 hover:text-white"
-          >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </Button>
+          <div className="flex items-center gap-1">
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="text-slate-400 hover:text-white lg:hidden"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCollapsed(!collapsed)}
+              className="text-slate-400 hover:text-white hidden lg:flex"
+            >
+              {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </Button>
+          </div>
         </div>
 
-        <nav className="flex-1 space-y-1 p-2">
-          {navItems.map((item) => {
+        <nav className="flex-1 space-y-1 p-2 overflow-y-auto">
+          {filteredNavItems.map((item) => {
             const isActive = pathname.startsWith(item.href)
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onClose}
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                   isActive
@@ -87,6 +116,12 @@ export function Sidebar({ className }: SidebarProps) {
         </nav>
 
         <div className="border-t border-slate-800 p-2">
+          {session?.user && !collapsed && (
+            <div className="px-3 py-2 mb-2">
+              <p className="text-xs text-slate-500 truncate">{session.user.email}</p>
+              <p className="text-xs text-slate-600">{session.user.role}</p>
+            </div>
+          )}
           <Button
             variant="ghost"
             onClick={() => signOut({ callbackUrl: '/' })}

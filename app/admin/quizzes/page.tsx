@@ -42,21 +42,21 @@ export default function QuizzesPage() {
   }
 
   return (
-    <div className="p-8 space-y-8 animate-in fade-in duration-500">
-      <div className="flex justify-between items-center">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">Quizzes</h1>
-          <p className="text-slate-500 mt-2 text-lg">Create and manage your assessments</p>
+          <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">Quizzes</h1>
+          <p className="text-slate-500 mt-1 md:mt-2 text-sm md:text-lg">Create and manage your assessments</p>
         </div>
-        <Link href="/admin/quizzes/create">
-          <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 px-6">
+        <Link href="/admin/quizzes/create" className="w-full sm:w-auto">
+          <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 px-6 w-full sm:w-auto">
             <Plus className="w-5 h-5 mr-2" />
             Create Quiz
           </Button>
         </Link>
       </div>
 
-      <div className="relative max-w-md">
+      <div className="relative w-full md:max-w-md">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
         <Input
           placeholder="Search quizzes or subjects..."

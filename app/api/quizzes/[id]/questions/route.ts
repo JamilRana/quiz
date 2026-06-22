@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { requireInstructorOrAdmin } from '@/lib/auth-middleware'
 
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions)
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const authResult = await requireInstructorOrAdmin()
+  if (authResult instanceof NextResponse) return authResult
 
   try {
     const quizQuestions = await prisma.quizQuestion.findMany({
@@ -26,8 +25,8 @@ export async function POST(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions)
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const authResult = await requireInstructorOrAdmin()
+  if (authResult instanceof NextResponse) return authResult
 
   try {
     const { questionIds, marks } = await req.json()

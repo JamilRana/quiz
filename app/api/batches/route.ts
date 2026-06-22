@@ -1,15 +1,12 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { requireInstructorOrAdmin } from '@/lib/auth-middleware'
 import { quizBatchSchema } from '@/lib/validations'
 
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const authResult = await requireInstructorOrAdmin()
+    if (authResult instanceof NextResponse) return authResult
 
     const { searchParams } = new URL(request.url)
     const quizId = searchParams.get('quizId')
@@ -60,10 +57,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const authResult = await requireInstructorOrAdmin()
+    if (authResult instanceof NextResponse) return authResult
 
     const body = await request.json()
     const validatedData = quizBatchSchema.parse(body)

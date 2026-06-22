@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { requireInstructorOrAdmin } from '@/lib/auth-middleware'
 import { quizBatchSchema } from '@/lib/validations'
 
 export async function GET(
@@ -9,10 +8,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const authResult = await requireInstructorOrAdmin()
+    if (authResult instanceof NextResponse) return authResult
 
     const batch = await prisma.batch.findUnique({
       where: { id: params.id },
@@ -38,10 +35,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const authResult = await requireInstructorOrAdmin()
+    if (authResult instanceof NextResponse) return authResult
 
     const body = await request.json()
     const validatedData = quizBatchSchema.parse(body)
@@ -94,10 +89,8 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const authResult = await requireInstructorOrAdmin()
+    if (authResult instanceof NextResponse) return authResult
 
     await prisma.batch.delete({
       where: { id: params.id },

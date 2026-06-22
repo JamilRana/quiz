@@ -58,21 +58,21 @@ export default function ImportPage() {
   }
 
   return (
-    <div className="p-8 space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">Bulk Import</h1>
-        <p className="text-slate-500 mt-2 text-lg">Upload Excel files to populate your subject question banks</p>
+        <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">Bulk Import</h1>
+        <p className="text-slate-500 mt-1 md:mt-2 text-sm md:text-lg">Upload Excel files to populate your subject question banks</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <Card className="md:col-span-2 border-none shadow-xl rounded-2xl overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+        <Card className="lg:col-span-2 border-none shadow-xl rounded-2xl overflow-hidden">
           <CardHeader className="bg-slate-50 dark:bg-slate-800/50">
             <CardTitle className="flex items-center gap-2">
               <Upload className="w-5 h-5 text-blue-500" />
               Upload Questions
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-10 text-center">
+          <CardContent className="p-6 md:p-10 text-center">
             <div 
               className={`border-2 border-dashed rounded-3xl p-12 transition-all cursor-pointer ${
                 file ? 'border-emerald-400 bg-emerald-50/10' : 'border-slate-200 hover:border-blue-400 hover:bg-blue-50/5'

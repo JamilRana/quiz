@@ -101,11 +101,11 @@ export default function SubjectsPage() {
   }
 
   return (
-    <div className="p-8 space-y-8 animate-in fade-in duration-500">
-      <div className="flex justify-between items-center">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">Subjects</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg">Manage your academic subjects and categories</p>
+          <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">Subjects</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1 md:mt-2 text-sm md:text-lg">Manage your academic subjects and categories</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
@@ -138,7 +138,7 @@ export default function SubjectsPage() {
         </Dialog>
       </div>
 
-      <div className="relative max-w-md">
+      <div className="relative w-full md:max-w-md">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
         <Input
           placeholder="Search subjects..."

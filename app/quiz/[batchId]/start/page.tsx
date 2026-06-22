@@ -69,7 +69,12 @@ export default function StartPage() {
         router.push(`/quiz/${params.batchId}/exam?responseId=${data.responseId}`)
       } else {
         const data = await res.json()
-        toast({ variant: 'destructive', title: 'Error', description: formatError(data.error) || 'Failed to start' })
+        if (data.isComplete && data.redirectUrl) {
+          toast({ title: 'Already Completed', description: `You scored ${data.score || 0}. Redirecting...` })
+          router.push(data.redirectUrl)
+        } else {
+          toast({ variant: 'destructive', title: 'Error', description: formatError(data.error) || 'Failed to start' })
+        }
       }
     } catch {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to start quiz' })

@@ -39,6 +39,8 @@ export default function QuestionBankPage() {
   const [subjectFilter, setSubjectFilter] = useState<string>('all')
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingQuestion, setEditingQuestion] = useState<QuestionItem | null>(null)
   const { toast } = useToast()
 
   // Form State
@@ -63,6 +65,10 @@ export default function QuestionBankPage() {
     setIsSubmitting(true)
     try {
       const formattedOptions = type !== 'TEXT' ? options.filter(o => o.trim() !== '') : null
+      let formattedCorrectAnswer: any = correctAnswer
+      if (type === 'MULTIPLE') {
+        formattedCorrectAnswer = correctAnswer.split(',').map(s => s.trim())
+      }
       const res = await fetch('/api/questions', {
         method: 'POST',
         body: JSON.stringify({
@@ -71,7 +77,7 @@ export default function QuestionBankPage() {
           type,
           difficulty,
           options: formattedOptions,
-          correctAnswer,
+          correctAnswer: formattedCorrectAnswer,
           explanation: explanation || null
         }),
         headers: { 'Content-Type': 'application/json' },
@@ -83,6 +89,58 @@ export default function QuestionBankPage() {
       mutate()
     } catch {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to add question' })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleOpenEditDialog = (q: QuestionItem) => {
+    setEditingQuestion(q)
+    setSubjectId(q.subjectId)
+    setText(q.text)
+    setType(q.type)
+    setDifficulty(q.difficulty)
+    setOptions(q.options ? [...(q.options as string[])] : ['', '', '', ''])
+    if (Array.isArray(q.correctAnswer)) {
+      setCorrectAnswer(q.correctAnswer.join(', '))
+    } else {
+      setCorrectAnswer(q.correctAnswer ? String(q.correctAnswer) : '')
+    }
+    setExplanation(q.explanation || '')
+    setIsEditDialogOpen(true)
+  }
+
+  const handleEditQuestion = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingQuestion) return
+    setIsSubmitting(true)
+    try {
+      const formattedOptions = type !== 'TEXT' ? options.filter(o => o.trim() !== '') : null
+      let formattedCorrectAnswer: any = correctAnswer
+      if (type === 'MULTIPLE') {
+        formattedCorrectAnswer = correctAnswer.split(',').map(s => s.trim())
+      }
+      const res = await fetch(`/api/questions/${editingQuestion.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          subjectId,
+          text,
+          type,
+          difficulty,
+          options: formattedOptions,
+          correctAnswer: formattedCorrectAnswer,
+          explanation: explanation || null
+        }),
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!res.ok) throw new Error()
+      toast({ title: 'Success', description: 'Question updated successfully' })
+      setIsEditDialogOpen(false)
+      resetForm()
+      setEditingQuestion(null)
+      mutate()
+    } catch {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to update question' })
     } finally {
       setIsSubmitting(false)
     }
@@ -113,15 +171,15 @@ export default function QuestionBankPage() {
   }
 
   return (
-    <div className="p-8 space-y-8 min-h-screen bg-slate-50 dark:bg-slate-900">
-      <div className="flex justify-between items-center">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 min-h-screen bg-slate-50 dark:bg-slate-900">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">Question Bank</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg">Manage your reusable questions across subjects</p>
+          <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">Question Bank</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1 md:mt-2 text-sm md:text-lg">Manage your reusable questions across subjects</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 px-6">
+            <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 px-6 w-full sm:w-auto">
               <Plus className="w-5 h-5 mr-2" />
               Add Question
             </Button>
@@ -163,7 +221,7 @@ export default function QuestionBankPage() {
 
               <div className="space-y-2">
                 <Label>Question Text</Label>
-                <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Enter the question..." required className="min-h-[100px]" />
+                <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Enter the question..." required className="min-h-[100px] w-full border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100" />
               </div>
 
               <div className="space-y-4 border-t pt-4">
@@ -208,7 +266,7 @@ export default function QuestionBankPage() {
 
               <div className="space-y-2">
                 <Label>Explanation (Optional)</Label>
-                <textarea value={explanation} onChange={(e) => setExplanation(e.target.value)} placeholder="Explain why the answer is correct..." />
+                <textarea value={explanation} onChange={(e) => setExplanation(e.target.value)} placeholder="Explain why the answer is correct..." className="w-full border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100" />
               </div>
 
               <DialogFooter>
@@ -219,10 +277,112 @@ export default function QuestionBankPage() {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+          setIsEditDialogOpen(open)
+          if (!open) {
+            resetForm()
+            setEditingQuestion(null)
+          }
+        }}>
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Question</DialogTitle>
+              <DialogDescription>Update the question's details in the question bank.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleEditQuestion} className="space-y-6 pt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Subject</Label>
+                  <Select value={subjectId} onValueChange={setSubjectId} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjects?.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Difficulty</Label>
+                  <Select value={difficulty} onValueChange={(v: any) => setDifficulty(v)} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Difficulty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="EASY">Easy</SelectItem>
+                      <SelectItem value="MEDIUM">Medium</SelectItem>
+                      <SelectItem value="HARD">Hard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Question Text</Label>
+                <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Enter the question..." required className="min-h-[100px] w-full border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100" />
+              </div>
+
+              <div className="space-y-4 border-t pt-4">
+                <div className="flex justify-between items-center">
+                  <Label>Options (for MCQ/Multiple)</Label>
+                  <Select value={type} onValueChange={(v: any) => setType(v)}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SINGLE">Single Choice</SelectItem>
+                      <SelectItem value="MULTIPLE">Multiple Choice</SelectItem>
+                      <SelectItem value="TEXT">Short Answer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {type !== 'TEXT' && (
+                  <div className="grid grid-cols-1 gap-3">
+                    {options.map((opt, i) => (
+                      <div key={i} className="flex gap-2">
+                        <Input 
+                          placeholder={`Option ${String.fromCharCode(65 + i)}`} 
+                          value={opt} 
+                          onChange={(e) => {
+                            const newOptions = [...options]
+                            newOptions[i] = e.target.value
+                            setOptions(newOptions)
+                          }}
+                        />
+                      </div>
+                    ))}
+                    <Button type="button" variant="outline" size="sm" onClick={() => setOptions([...options, ''])} className="w-fit">Add Option</Button>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Correct Answer</Label>
+                <Input value={correctAnswer} onChange={(e) => setCorrectAnswer(e.target.value)} placeholder="Exact text of correct answer" required />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Explanation (Optional)</Label>
+                <textarea value={explanation} onChange={(e) => setExplanation(e.target.value)} placeholder="Explain why the answer is correct..." className="w-full border border-slate-200 dark:border-slate-700 bg-transparent rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100" />
+              </div>
+
+              <DialogFooter>
+                <Button type="submit" disabled={isSubmitting} className="w-full h-12 text-lg">
+                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card className="border-none shadow-sm bg-white dark:bg-slate-800 rounded-2xl">
-        <CardContent className="p-6">
+        <CardContent className="p-4 md:p-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -233,9 +393,9 @@ export default function QuestionBankPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Select value={subjectFilter} onValueChange={setSubjectFilter}>
-                <SelectTrigger className="w-[180px] h-11 bg-slate-50 dark:bg-slate-900 border-none rounded-xl">
+                <SelectTrigger className="w-full sm:w-[180px] h-11 bg-slate-50 dark:bg-slate-900 border-none rounded-xl">
                   <BookOpen className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="All Subjects" />
                 </SelectTrigger>
@@ -247,7 +407,7 @@ export default function QuestionBankPage() {
                 </SelectContent>
               </Select>
               <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-                <SelectTrigger className="w-[150px] h-11 bg-slate-50 dark:bg-slate-900 border-none rounded-xl">
+                <SelectTrigger className="w-full sm:w-[150px] h-11 bg-slate-50 dark:bg-slate-900 border-none rounded-xl">
                   <Filter className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Difficulty" />
                 </SelectTrigger>
@@ -272,7 +432,7 @@ export default function QuestionBankPage() {
             <p className="text-slate-500 font-medium">No questions found matching your filters</p>
           </div>
         ) : (
-          filteredQuestions?.map((q) => (
+          filteredQuestions?.map((q, index) => (
             <Card key={q.id} className="group overflow-hidden border-none shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-slate-800 rounded-xl">
               <div className="p-5 flex gap-4 items-start">
                 <div className="flex-1 space-y-3">
@@ -292,19 +452,32 @@ export default function QuestionBankPage() {
                       <Badge variant="destructive" className="ml-auto">Inactive</Badge>
                     )}
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{q.text}</h3>
+                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 flex items-start gap-2">
+                    <span className="text-indigo-600 dark:text-indigo-400 font-extrabold select-none">#{index + 1}</span>
+                    <span>{q.text}</span>
+                  </h3>
                   {q.options && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {(q.options as string[]).map((opt, i) => (
-                        <div key={i} className={`text-sm px-3 py-1.5 rounded-lg border ${opt === q.correctAnswer ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-medium' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
-                          {String.fromCharCode(65 + i)}. {opt}
-                        </div>
-                      ))}
+                      {(q.options as string[]).map((opt, i) => {
+                        const isCorrect = Array.isArray(q.correctAnswer)
+                          ? q.correctAnswer.some((ans: any) => String(ans).trim().toLowerCase() === opt.trim().toLowerCase())
+                          : String(q.correctAnswer).trim().toLowerCase() === opt.trim().toLowerCase();
+                        return (
+                          <div key={i} className={`text-sm px-3 py-1.5 rounded-lg border ${isCorrect ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-medium' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
+                            {String.fromCharCode(65 + i)}. {opt}
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Button variant="ghost" size="icon" className="hover:bg-slate-100 dark:hover:bg-slate-700">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => handleOpenEditDialog(q)}
+                    className="hover:bg-slate-100 dark:hover:bg-slate-700"
+                  >
                     <Pencil className="w-4 h-4 text-slate-500" />
                   </Button>
                   <Button 

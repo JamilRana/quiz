@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { requireInstructorOrAdmin } from '@/lib/auth-middleware'
 import * as XLSX from 'xlsx'
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const authResult = await requireInstructorOrAdmin()
+    if (authResult instanceof NextResponse) return authResult
+    const { user } = authResult
 
     const formData = await request.formData()
     const file = formData.get('file') as File
@@ -44,16 +44,22 @@ export async function POST(request: Request) {
         if (row.option_c) options.push(row.option_c.toString())
         if (row.option_d) options.push(row.option_d.toString())
 
+        const resolvedType = type === 'MCQ' ? 'SINGLE' : type
+        let parsedCorrectAnswer: any = correctAnswer
+        if (resolvedType === 'MULTIPLE') {
+          parsedCorrectAnswer = correctAnswer.split(',').map((s: string) => s.trim())
+        }
+
         // 3. Create Question
         await tx.question.create({
           data: {
             subjectId: subject.id,
             text: questionText,
-            type: type === 'MCQ' ? 'SINGLE' : type, // Handle user variations
+            type: resolvedType,
             difficulty,
             options: options.length > 0 ? options : undefined,
-            correctAnswer,
-            createdById: session.user.id
+            correctAnswer: parsedCorrectAnswer,
+            createdById: user.id
           }
         })
         importedCount++

@@ -38,12 +38,9 @@ export async function GET(
       options: qq.question.options, // This is Json (array of strings)
     }))
 
-    const existingAnswers: Record<string, { textAnswer?: string; selectedOption?: string }> = {}
+    const existingAnswers: Record<string, any> = {}
     response.answers.forEach((answer) => {
-      existingAnswers[answer.questionId] = {
-        textAnswer: answer.textAnswer || undefined,
-        selectedOption: answer.textAnswer || undefined, // We used textAnswer for both in simple logic
-      }
+      existingAnswers[answer.questionId] = answer.answer
     })
 
     return NextResponse.json({

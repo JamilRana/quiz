@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { responseId, questionId, textAnswer } = body
+    const { responseId, questionId, answer } = body
 
     if (!responseId || !questionId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       await prisma.answer.update({
         where: { id: existingAnswer.id },
         data: {
-          textAnswer,
+          answer,
         },
       })
     } else {
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
         data: {
           responseId,
           questionId,
-          textAnswer,
+          answer,
         },
       })
     }

@@ -7,13 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  INSTRUCTOR
+}
+
 model Admin {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String            @id @default(cuid())
+  email           String            @unique
+  password        String
+  name            String?
+  role            Role              @default(INSTRUCTOR)
+  isActive        Boolean           @default(true)
+  lastLoginAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  createdQuestions Question[]
+  auditLogs       AuditLog[]
 }
 
 model Subject {
@@ -41,13 +51,14 @@ model Question {
   text          String
   type          QuestionType
   options       Json?     // MCQ options
-  correctAnswer String
+  correctAnswer Json
   explanation   String?
 
   difficulty    Difficulty @default(MEDIUM)
   isActive      Boolean    @default(true)
 
   createdById   String?
+  createdBy     Admin?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -56,6 +67,7 @@ model Question {
 
   @@index([subjectId])
   @@index([isActive])
+  @@index([createdById])
 }
 
 enum QuestionType {
@@ -126,6 +138,7 @@ model Batch {
   
   quiz                 Quiz       @relation(fields: [quizId], references: [id], onDelete: Cascade)
   responses            Response[]
+  auditLogs            AuditLog[]
 
   @@index([quizId])
   @@index([slug])
@@ -159,7 +172,7 @@ model Answer {
   id          String    @id @default(cuid())
   responseId  String
   questionId  String
-  textAnswer  String?
+  answer      Json?
   isCorrect   Boolean   @default(false)
   score       Float     @default(0)
   gradedAt    DateTime?
@@ -183,15 +196,43 @@ model LeaderboardSnapshot {
 }
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  batchId    String?
-  responseId String?
-  action     String
-  details    Json
-  ipAddress  String?
-  createdAt  DateTime @default(now())
+  id            String   @id @default(cuid())
+  adminId       String?
+  admin         Admin?   @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  batchId       String?
+  batch         Batch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  responseId    String?
+  action        String
+  details       Json
+  ipAddress     String?
+  userAgent     String?
+  severity      String   @default("INFO") // INFO, WARNING, ERROR, CRITICAL
+  createdAt     DateTime @default(now())
 
   @@index([batchId])
   @@index([responseId])
+  @@index([adminId])
   @@index([createdAt])
+  @@index([action])
+  @@index([severity])
+}
+
+model Permission {
+  id              String            @id @default(cuid())
+  name            String            @unique
+  description     String?
+  category        String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id            String      @id @default(cuid())
+  role          Role
+  permissionId  String
+  permission    Permission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([role, permissionId])
 }

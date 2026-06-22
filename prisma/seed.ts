@@ -1,9 +1,39 @@
-import { PrismaClient, QuestionType, Difficulty } from '@prisma/client';
+import { PrismaClient, QuestionType, Difficulty, Role } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🚀 Starting Expanded eVLMIS Seeding...');
+
+  const hashedPassword = await bcrypt.hash('admin123', 12);
+
+  const admin = await prisma.admin.upsert({
+    where: { email: 'admin@quiz.com' },
+    update: {},
+    create: {
+      email: 'admin@quiz.com',
+      password: hashedPassword,
+      name: 'Super Admin',
+      role: Role.ADMIN,
+      isActive: true,
+    },
+  });
+
+  const instructorPassword = await bcrypt.hash('instructor123', 12);
+  const instructor = await prisma.admin.upsert({
+    where: { email: 'instructor@quiz.com' },
+    update: {},
+    create: {
+      email: 'instructor@quiz.com',
+      password: instructorPassword,
+      name: 'Demo Instructor',
+      role: Role.INSTRUCTOR,
+      isActive: true,
+    },
+  });
+
+  console.log(`✅ Seeded admins: ${admin.email}, ${instructor.email}`);
 
   const subject = await prisma.subject.upsert({
     where: { name: 'eVLMIS Technical' },
@@ -71,6 +101,7 @@ async function main() {
         options: q.options,
         correctAnswer: q.correctAnswer,
         difficulty: Difficulty.MEDIUM,
+        createdById: admin.id,
         quizQuestions: {
           create: {
             quizId: quiz.id,

@@ -9,7 +9,13 @@ export async function POST(
     const response = await prisma.response.findUnique({
       where: { id: params.id },
       include: {
-        batch: { include: { quiz: { include: { questions: true } } } },
+        batch: {
+          include: {
+            quiz: {
+              include: { questions: true },
+            },
+          },
+        },
         answers: true,
       },
     }) as any
@@ -19,20 +25,41 @@ export async function POST(
     }
 
     if (response.isComplete) {
-      return NextResponse.json({ error: 'Already submitted' }, { status: 400 })
+      const showLeaderboard = response.batch.quiz?.showLeaderboard && response.batch.leaderboardVisible
+      return NextResponse.json({
+        error: 'Already submitted',
+        score: response.totalScore,
+        showLeaderboard,
+        redirectUrl: showLeaderboard
+          ? `/quiz/${response.batchId}/leaderboard?responseId=${response.id}`
+          : `/quiz/${response.batchId}/submit?responseId=${response.id}`,
+      }, { status: 400 })
     }
 
     const elapsed = Date.now() - new Date(response.startedAt).getTime()
     const maxDuration = response.batch.quiz.durationMinutes * 60 * 1000
 
-    if (elapsed > (maxDuration + 30000)) { // 30s grace period
+    if (elapsed > (maxDuration + 30000)) {
+      await prisma.auditLog.create({
+        data: {
+          responseId: response.id,
+          batchId: response.batchId,
+          action: 'SUBMIT_TIMEOUT',
+          details: {
+            elapsed: Math.floor(elapsed / 1000),
+            maxDuration: Math.floor(maxDuration / 1000),
+          },
+          ipAddress: response.ipAddress,
+          severity: 'WARNING',
+        },
+      })
+
       return NextResponse.json({ error: 'Time expired' }, { status: 400 })
     }
 
     const quizQuestions = response.batch.quiz.questions
     const answeredCount = response.answers.filter((a: any) => a.textAnswer).length
-    
-    // In exam mode, ensure all questions have at least a blank answer record
+
     if (response.batch.quiz.examMode) {
       for (const qq of quizQuestions) {
         const hasAnswer = response.answers.some((a: any) => a.questionId === qq.questionId)
@@ -56,11 +83,18 @@ export async function POST(
 
     const duration = Math.floor(elapsed / 1000)
     const expectedDuration = response.batch.quiz.durationMinutes * 60
-    let flagReason = null
+    const flagReasons: string[] = [...(response.isFlagged ? [response.flagReason || ''] : [])]
 
     if (duration < expectedDuration * 0.2) {
-      flagReason = 'Submission too fast (< 20% of duration)'
+      flagReasons.push(`Submission too fast (${Math.round((duration / expectedDuration) * 100)}% of allowed time)`)
     }
+
+    if (answeredCount === 0 && quizQuestions.length > 0) {
+      flagReasons.push('No answers submitted')
+    }
+
+    const cleanedFlagReasons = flagReasons.filter(r => r.length > 0)
+    const finalFlagReason = cleanedFlagReasons.length > 0 ? cleanedFlagReasons.join('; ') : null
 
     await prisma.response.update({
       where: { id: response.id },
@@ -68,28 +102,45 @@ export async function POST(
         isComplete: true,
         submittedAt: new Date(),
         totalScore: totalScore._sum.score || 0,
-        isFlagged: flagReason ? true : response.isFlagged,
-        flagReason: flagReason || response.flagReason,
+        isFlagged: finalFlagReason ? true : false,
+        flagReason: finalFlagReason,
       },
     })
+
+    const auditDetails: Record<string, any> = {
+      duration,
+      expectedDuration,
+      durationPercentage: Math.round((duration / expectedDuration) * 100),
+      answeredCount,
+      totalQuestions: quizQuestions.length,
+      totalScore: totalScore._sum.score || 0,
+      examMode: response.batch.quiz.examMode,
+    }
+    if (finalFlagReason) {
+      auditDetails.flagReasons = cleanedFlagReasons
+    }
 
     await prisma.auditLog.create({
       data: {
         responseId: response.id,
         batchId: response.batchId,
-        action: 'SUBMIT',
-        details: {
-          duration,
-          expectedDuration,
-          answeredCount,
-          totalQuestions: quizQuestions.length,
-          flagReason,
-        },
+        action: finalFlagReason ? 'SUBMIT_FLAGGED' : 'SUBMIT',
+        details: auditDetails,
         ipAddress: response.ipAddress,
+        severity: finalFlagReason ? 'WARNING' : 'INFO',
       },
     })
 
-    return NextResponse.json({ success: true, score: totalScore._sum.score || 0 })
+    const showLeaderboard = response.batch.quiz?.showLeaderboard && response.batch.leaderboardVisible
+
+    return NextResponse.json({
+      success: true,
+      score: totalScore._sum.score || 0,
+      showLeaderboard,
+      redirectUrl: showLeaderboard
+        ? `/quiz/${response.batchId}/leaderboard?responseId=${response.id}`
+        : `/quiz/${response.batchId}/submit?responseId=${response.id}`,
+    })
   } catch (error) {
     console.error('Submit error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
