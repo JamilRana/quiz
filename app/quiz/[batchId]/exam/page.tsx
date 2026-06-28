@@ -29,6 +29,7 @@ export default function ExamPage() {
   const [submitting, setSubmitting] = useState(false)
   const [tabWarning, setTabWarning] = useState(false)
   const [showTimer, setShowTimer] = useState(true)
+  const [navigating, setNavigating] = useState(false)
 
   const hasAnswer = useCallback((qId: string) => {
     const ans = answers[qId]
@@ -223,7 +224,9 @@ export default function ExamPage() {
   }
 
   const navigateTo = async (newIndex: number) => {
-    if (newIndex < 0 || newIndex >= questions.length) return
+    if (newIndex < 0 || newIndex >= questions.length || navigating) return
+    
+    setNavigating(true)
     
     const currentQId = questions[currentIndex]?.id
     if (currentQId) {
@@ -238,6 +241,7 @@ export default function ExamPage() {
     }
     
     setCurrentIndex(newIndex)
+    setNavigating(false)
   }
 
   const formatTime = (seconds: number) => {
@@ -344,7 +348,15 @@ export default function ExamPage() {
       </div>
 
       <div className="max-w-4xl mx-auto p-4 md:p-8">
-        <Card className="bg-slate-800 border-none shadow-2xl rounded-2xl md:rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-500">
+        <Card className="bg-slate-800 border-none shadow-2xl rounded-2xl md:rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-500 relative">
+          {navigating && (
+            <div className="absolute inset-0 bg-slate-900/60 z-20 flex items-center justify-center rounded-2xl md:rounded-3xl animate-in fade-in duration-200">
+              <div className="text-center">
+                <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p className="text-slate-300 text-sm font-medium">Saving answer...</p>
+              </div>
+            </div>
+          )}
           <CardHeader className="p-5 md:pb-8 md:pt-10 md:px-10 border-b border-slate-700/50">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
               <div className="space-y-2">
@@ -443,13 +455,14 @@ export default function ExamPage() {
               <button
                 key={i}
                 onClick={() => navigateTo(i)}
+                disabled={navigating}
                 className={`w-10 h-10 rounded-xl text-sm font-black transition-all transform hover:scale-110 active:scale-90 shrink-0 flex items-center justify-center ${
                   i === currentIndex 
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' 
                     : hasAnswer(questions[i].id)
                       ? 'bg-emerald-600 text-white'
                       : 'bg-slate-800 text-slate-500 border border-slate-700'
-                }`}
+                } ${navigating ? 'opacity-50 cursor-wait' : ''}`}
               >
                 {lockedQuestions[questions[i].id] ? (
                   <Lock className="w-3.5 h-3.5 text-white" />
@@ -464,7 +477,7 @@ export default function ExamPage() {
             <Button
               variant="ghost"
               onClick={() => navigateTo(currentIndex - 1)}
-              disabled={currentIndex === 0}
+              disabled={currentIndex === 0 || navigating}
               className="text-slate-400 hover:text-white hover:bg-slate-800 h-12 md:h-14 px-4 md:px-8 rounded-xl md:rounded-2xl border border-slate-700 text-sm md:text-base flex-1 md:flex-none"
             >
               <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
@@ -473,11 +486,14 @@ export default function ExamPage() {
             
             <Button
               onClick={() => navigateTo(currentIndex + 1)}
-              disabled={currentIndex === questions.length - 1}
+              disabled={currentIndex === questions.length - 1 || navigating}
               className="bg-blue-600 hover:bg-blue-700 h-12 md:h-14 px-5 md:px-10 rounded-xl md:rounded-2xl text-white font-bold shadow-lg shadow-blue-500/20 text-sm md:text-base flex-1 md:flex-none"
             >
-              Next Question
-              <ChevronRight className="w-4 h-4 md:w-5 md:h-5 ml-1 md:mr-2" />
+              {navigating ? (
+                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>Saving...</>
+              ) : (
+                <>Next Question<ChevronRight className="w-4 h-4 md:w-5 md:h-5 ml-1 md:mr-2" /></>
+              )}
             </Button>
           </div>
         </div>

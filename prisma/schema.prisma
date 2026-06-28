@@ -138,7 +138,6 @@ model Batch {
   
   quiz                 Quiz       @relation(fields: [quizId], references: [id], onDelete: Cascade)
   responses            Response[]
-  auditLogs            AuditLog[]
 
   @@index([quizId])
   @@index([slug])
@@ -177,10 +176,12 @@ model Answer {
   score       Float     @default(0)
   gradedAt    DateTime?
   gradedBy    String?
+  createdAt   DateTime  @default(now())
   
   response    Response  @relation(fields: [responseId], references: [id], onDelete: Cascade)
   question    Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
+  @@unique([responseId, questionId])
   @@index([responseId])
   @@index([questionId])
 }
@@ -200,7 +201,6 @@ model AuditLog {
   adminId       String?
   admin         Admin?   @relation(fields: [adminId], references: [id], onDelete: SetNull)
   batchId       String?
-  batch         Batch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
   responseId    String?
   action        String
   details       Json
@@ -215,24 +215,4 @@ model AuditLog {
   @@index([createdAt])
   @@index([action])
   @@index([severity])
-}
-
-model Permission {
-  id              String            @id @default(cuid())
-  name            String            @unique
-  description     String?
-  category        String
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  rolePermissions RolePermission[]
-}
-
-model RolePermission {
-  id            String      @id @default(cuid())
-  role          Role
-  permissionId  String
-  permission    Permission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  createdAt     DateTime    @default(now())
-
-  @@unique([role, permissionId])
 }

@@ -1,6 +1,5 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import useSWR from 'swr'

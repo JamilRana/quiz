@@ -58,7 +58,25 @@ export async function POST(
     }
 
     const quizQuestions = response.batch.quiz.questions
-    const answeredCount = response.answers.filter((a: any) => a.textAnswer).length
+    // Deduplicate answers: keep only the latest for each questionId
+    const seenQuestions = new Set<string>()
+    const dupIds: string[] = []
+    const dedupedAnswers: any[] = []
+    
+    for (const a of response.answers) {
+      if (seenQuestions.has(a.questionId)) {
+        dupIds.push(a.id)
+      } else {
+        seenQuestions.add(a.questionId)
+        dedupedAnswers.push(a)
+      }
+    }
+
+    if (dupIds.length > 0) {
+      await prisma.answer.deleteMany({ where: { id: { in: dupIds } } })
+    }
+
+    const answeredCount = dedupedAnswers.filter((a: any) => a.answer).length
 
     if (response.batch.quiz.examMode) {
       for (const qq of quizQuestions) {

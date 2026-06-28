@@ -4,6 +4,9 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 
 export const authOptions: NextAuthOptions = {
+  pages: {
+    signIn: '/admin',
+  },
   providers: [
     CredentialsProvider({
       name: 'credentials',

@@ -82,27 +82,19 @@ export async function POST(request: Request) {
       score = isCorrect ? quizQuestion.marks : 0
     }
 
-    const existingAnswer = await prisma.answer.findFirst({
-      where: { responseId, questionId },
+    const savedAnswer = await prisma.answer.upsert({
+      where: {
+        responseId_questionId: { responseId, questionId },
+      },
+      update: { answer, isCorrect, score },
+      create: {
+        responseId,
+        questionId,
+        answer,
+        isCorrect,
+        score,
+      },
     })
-
-    let savedAnswer
-    if (existingAnswer) {
-      savedAnswer = await prisma.answer.update({
-        where: { id: existingAnswer.id },
-        data: { answer, isCorrect, score },
-      })
-    } else {
-      savedAnswer = await prisma.answer.create({
-        data: {
-          responseId,
-          questionId,
-          answer,
-          isCorrect,
-          score,
-        },
-      })
-    }
 
     return NextResponse.json(savedAnswer)
   } catch (error) {

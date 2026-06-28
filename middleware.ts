@@ -1,13 +1,13 @@
 import { withAuth } from 'next-auth/middleware'
-import { NextResponse } from 'next/server'
 
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token
     const path = req.nextUrl.pathname
 
-    if (path.startsWith('/admin/dashboard') && !token) {
-      return NextResponse.redirect(new URL('/admin', req.url))
+    if (path === '/admin' && token) {
+      // Already logged in and visiting login page — redirect to dashboard
+      return Response.redirect(new URL('/admin/dashboard', req.url))
     }
   },
   {
@@ -18,5 +18,5 @@ export default withAuth(
 )
 
 export const config = {
-  matcher: ['/admin/dashboard/:path*'],
+  matcher: ['/admin/(.*)'],
 }

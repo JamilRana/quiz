@@ -1,19 +1,22 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/admin/Sidebar'
 import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+
+const adminOnlyPaths = ['/admin/users']
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { status } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
+  const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
@@ -21,6 +24,15 @@ export default function AdminLayout({
       router.push('/admin')
     }
   }, [status, router])
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role !== 'ADMIN') {
+      const needsAdmin = adminOnlyPaths.some(p => pathname.startsWith(p))
+      if (needsAdmin) {
+        router.push('/admin/dashboard')
+      }
+    }
+  }, [status, session, pathname, router])
 
   if (status === 'loading') {
     return (

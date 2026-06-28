@@ -25,14 +25,35 @@ export async function GET(request: Request) {
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
-        include: {
-          batch: { select: { title: true, slug: true } },
+        select: {
+          id: true,
+          batchId: true,
+          responseId: true,
+          action: true,
+          details: true,
+          ipAddress: true,
+          userAgent: true,
+          severity: true,
+          createdAt: true,
+          adminId: true,
         },
       }),
       prisma.auditLog.count({ where }),
       prisma.auditLog.groupBy({ by: ['action'], _count: { action: true } }),
       prisma.auditLog.groupBy({ by: ['severity'], _count: { severity: true } }),
     ])
+
+    // Fetch batch titles for logs that have batchId
+    const batchIds = logs.filter(l => l.batchId).map(l => l.batchId!) as string[]
+    const batches = batchIds.length > 0
+      ? await prisma.batch.findMany({ where: { id: { in: batchIds } }, select: { id: true, title: true, slug: true } })
+      : []
+    const batchMap = new Map(batches.map(b => [b.id, { title: b.title, slug: b.slug }]))
+
+    const logsWithBatch = logs.map(l => ({
+      ...l,
+      batch: l.batchId ? batchMap.get(l.batchId) || null : null,
+    }))
 
     const statsMap = stats.reduce((acc: Record<string, number>, s: any) => {
       acc[s.action] = s._count.action
@@ -45,7 +66,7 @@ export async function GET(request: Request) {
     }, {})
 
     return NextResponse.json({
-      logs,
+      logs: logsWithBatch,
       total,
       page,
       totalPages: Math.ceil(total / limit),
