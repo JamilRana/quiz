@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -30,6 +30,7 @@ export default function ExamPage() {
   const [tabWarning, setTabWarning] = useState(false)
   const [showTimer, setShowTimer] = useState(true)
   const [navigating, setNavigating] = useState(false)
+  const autoSubmittedRef = useRef(false)
 
   const hasAnswer = useCallback((qId: string) => {
     const ans = answers[qId]
@@ -156,20 +157,24 @@ export default function ExamPage() {
   }, [responseId, fetchExam, router])
 
   useEffect(() => {
-    if (!batch || timeLeft <= 0) return
+    if (!batch) return
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1) {
-          handleSubmit()
-          return 0
-        }
+        if (prev <= 0) return 0
         return prev - 1
       })
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [batch, timeLeft, handleSubmit])
+  }, [batch])
+
+  // Auto-submit when time expires, including when already expired on page load
+  useEffect(() => {
+    if (!batch || timeLeft > 0 || submitting || autoSubmittedRef.current) return
+    autoSubmittedRef.current = true
+    handleSubmit()
+  }, [batch, timeLeft, submitting, handleSubmit])
 
   useEffect(() => {
     if (!batch?.examMode) return
