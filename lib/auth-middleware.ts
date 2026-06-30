@@ -2,13 +2,29 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { hasPermission, Permission } from '@/lib/permissions'
+import { prisma } from '@/lib/prisma'
 
 export async function requireAuth(): Promise<{ user: any } | NextResponse> {
   const session = await getServerSession(authOptions)
-  if (!session?.user) {
+  if (!session?.user || !session.user.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  return { user: session.user }
+
+  try {
+    const dbAdmin = await prisma.admin.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, role: true, name: true, email: true, isActive: true }
+    })
+
+    if (!dbAdmin || !dbAdmin.isActive) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    return { user: dbAdmin }
+  } catch (error) {
+    console.error('requireAuth database lookup error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
 
 export async function requirePermission(

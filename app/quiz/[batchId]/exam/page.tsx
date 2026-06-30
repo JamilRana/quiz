@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/use-toast'
-import { Clock, AlertTriangle, ChevronLeft, ChevronRight, Send, Eye, EyeOff, CheckSquare, Lock } from 'lucide-react'
+import { Clock, AlertTriangle, ChevronLeft, ChevronRight, Send, Eye, EyeOff, CheckSquare, Lock, Loader2 } from 'lucide-react'
 import { Question, ExamBatch } from '@/types/quiz'
 
 export default function ExamPage() {
@@ -230,6 +230,7 @@ export default function ExamPage() {
 
   const navigateTo = async (newIndex: number) => {
     if (newIndex < 0 || newIndex >= questions.length || navigating) return
+    if (batch?.examMode && newIndex !== currentIndex + 1) return
     
     setNavigating(true)
     
@@ -342,9 +343,17 @@ export default function ExamPage() {
               </Button>
               <Button 
                 onClick={handleSubmit} 
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 md:px-8 h-10 md:h-12 text-xs md:text-base rounded-xl transition-all hover:scale-105 active:scale-95 shrink-0"
+                disabled={submitting}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 md:px-8 h-10 md:h-12 text-xs md:text-base rounded-xl transition-all hover:scale-105 active:scale-95 shrink-0 flex items-center justify-center gap-1.5"
               >
-                Submit Exam
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  batch?.examMode ? 'Submit Exam' : 'Submit Quiz'
+                )}
               </Button>
             </div>
           </div>
@@ -460,14 +469,14 @@ export default function ExamPage() {
               <button
                 key={i}
                 onClick={() => navigateTo(i)}
-                disabled={navigating}
-                className={`w-10 h-10 rounded-xl text-sm font-black transition-all transform hover:scale-110 active:scale-90 shrink-0 flex items-center justify-center ${
+                disabled={navigating || batch?.examMode}
+                className={`w-10 h-10 rounded-xl text-sm font-black transition-all shrink-0 flex items-center justify-center ${
                   i === currentIndex 
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' 
                     : hasAnswer(questions[i].id)
                       ? 'bg-emerald-600 text-white'
                       : 'bg-slate-800 text-slate-500 border border-slate-700'
-                } ${navigating ? 'opacity-50 cursor-wait' : ''}`}
+                } ${batch?.examMode ? 'cursor-default' : 'transform hover:scale-110 active:scale-90'} ${navigating ? 'opacity-50 cursor-wait' : ''}`}
               >
                 {lockedQuestions[questions[i].id] ? (
                   <Lock className="w-3.5 h-3.5 text-white" />
@@ -479,27 +488,55 @@ export default function ExamPage() {
           </div>
 
           <div className="flex justify-between items-center gap-4">
-            <Button
-              variant="ghost"
-              onClick={() => navigateTo(currentIndex - 1)}
-              disabled={currentIndex === 0 || navigating}
-              className="text-slate-400 hover:text-white hover:bg-slate-800 h-12 md:h-14 px-4 md:px-8 rounded-xl md:rounded-2xl border border-slate-700 text-sm md:text-base flex-1 md:flex-none"
-            >
-              <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
-              Previous
-            </Button>
+            {!batch?.examMode && (
+              <Button
+                variant="ghost"
+                onClick={() => navigateTo(currentIndex - 1)}
+                disabled={currentIndex === 0 || navigating || submitting}
+                className="text-slate-400 hover:text-white hover:bg-slate-800 h-12 md:h-14 px-4 md:px-8 rounded-xl md:rounded-2xl border border-slate-700 text-sm md:text-base flex-1 md:flex-none"
+              >
+                <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
+                Previous
+              </Button>
+            )}
             
-            <Button
-              onClick={() => navigateTo(currentIndex + 1)}
-              disabled={currentIndex === questions.length - 1 || navigating}
-              className="bg-blue-600 hover:bg-blue-700 h-12 md:h-14 px-5 md:px-10 rounded-xl md:rounded-2xl text-white font-bold shadow-lg shadow-blue-500/20 text-sm md:text-base flex-1 md:flex-none"
-            >
-              {navigating ? (
-                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>Saving...</>
-              ) : (
-                <>Next Question<ChevronRight className="w-4 h-4 md:w-5 md:h-5 ml-1 md:mr-2" /></>
-              )}
-            </Button>
+            {currentIndex === questions.length - 1 ? (
+              <Button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="bg-emerald-600 hover:bg-emerald-700 h-12 md:h-14 px-5 md:px-10 rounded-xl md:rounded-2xl text-white font-bold shadow-lg shadow-emerald-500/20 text-sm md:text-base w-full md:w-auto ml-auto flex items-center justify-center gap-2"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    {batch?.examMode ? 'Submit Exam' : 'Submit Quiz'}
+                    <Send className="w-4 h-4 md:w-5 md:h-5 ml-2" />
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => navigateTo(currentIndex + 1)}
+                disabled={currentIndex === questions.length - 1 || navigating || submitting}
+                className={`bg-blue-600 hover:bg-blue-700 h-12 md:h-14 px-5 md:px-10 rounded-xl md:rounded-2xl text-white font-bold shadow-lg shadow-blue-500/20 text-sm md:text-base flex-1 md:flex-none flex items-center justify-center gap-2 ${batch?.examMode ? 'w-full' : ''}`}
+              >
+                {navigating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    Next Question
+                    <ChevronRight className="w-4 h-4 md:w-5 md:h-5 ml-1 md:mr-2" />
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </div>

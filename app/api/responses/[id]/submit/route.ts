@@ -53,8 +53,6 @@ export async function POST(
           severity: 'WARNING',
         },
       })
-
-      return NextResponse.json({ error: 'Time expired' }, { status: 400 })
     }
 
     const quizQuestions = response.batch.quiz.questions
@@ -105,6 +103,10 @@ export async function POST(
 
     if (duration < expectedDuration * 0.2) {
       flagReasons.push(`Submission too fast (${Math.round((duration / expectedDuration) * 100)}% of allowed time)`)
+    }
+
+    if (elapsed > (maxDuration + 30000)) {
+      flagReasons.push(`Late submission / Time expired (${Math.round((elapsed - maxDuration) / 1000)}s late)`)
     }
 
     if (answeredCount === 0 && quizQuestions.length > 0) {

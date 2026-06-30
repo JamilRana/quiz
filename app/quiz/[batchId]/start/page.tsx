@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/use-toast'
 import { getDeviceFingerprint, generateDeviceHash } from '@/lib/fingerprint'
 import { formatError } from '@/lib/errors'
-import { Shield, Clock, AlertTriangle, User } from 'lucide-react'
+import { Shield, Clock, AlertTriangle, User, Loader2 } from 'lucide-react'
 import { Batch } from '@/types/quiz'
 
 export default function StartPage() {
@@ -173,7 +173,7 @@ export default function StartPage() {
               >
                 {submitting ? (
                   <span className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <Loader2 className="w-5 h-5 animate-spin" />
                     Starting...
                   </span>
                 ) : (

@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import useSWR from 'swr'
 import { Button } from '@/components/ui/button'
@@ -14,6 +16,8 @@ const fetcher = (url: string) => fetch(url).then((res) => {
 })
 
 export default function QuizView({ batchId }: QuizViewProps) {
+  const router = useRouter()
+  const [starting, setStarting] = useState(false)
   const { data: batch, error, isLoading } = useSWR(`/api/public/batches/${batchId}`, fetcher)
 
   if (isLoading) {
@@ -133,11 +137,23 @@ export default function QuizView({ batchId }: QuizViewProps) {
 
               <div className="flex flex-col gap-4">
                 {isWithinTime ? (
-                  <Link href={`/quiz/${batch.id}/start`}>
-                    <Button className="w-full h-14 md:h-16 text-lg md:text-xl font-black bg-blue-700 hover:bg-blue-800 text-white rounded-xl md:rounded-2xl shadow-xl shadow-blue-700/20 transform transition-all hover:scale-[1.02] active:scale-[0.98]">
-                      Register & Start Exam
-                    </Button>
-                  </Link>
+                  <Button 
+                    disabled={starting}
+                    onClick={() => {
+                      setStarting(true)
+                      router.push(`/quiz/${batch.id}/start`)
+                    }}
+                    className="w-full h-14 md:h-16 text-lg md:text-xl font-black bg-blue-700 hover:bg-blue-800 text-white rounded-xl md:rounded-2xl shadow-xl shadow-blue-700/20 transform transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    {starting ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Loading...
+                      </span>
+                    ) : (
+                      batch.quiz?.examMode ? 'Register & Start Exam' : 'Register & Start Quiz'
+                    )}
+                  </Button>
                 ) : (
                   <Button disabled className="w-full h-14 md:h-16 text-lg md:text-xl font-black bg-slate-200 text-slate-400 rounded-xl md:rounded-2xl">
                     Not Currently Available
